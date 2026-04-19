@@ -22,6 +22,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 
 builder.Services.AddScoped<UserStore>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IDbInitializer, DevDbInitializer>();
 
 builder.Services.AddCors(options =>
 {
@@ -45,13 +46,13 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    db.Database.EnsureCreated();
-    await SeedData.InitialiseAsync(scope.ServiceProvider);
+    var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    await initializer.InitializeAsync();
 }
 
 app.UseExceptionHandler();
 app.UseCors("react");
+app.UseAuthentication();
 app.UseIdentityServer();
 app.MapControllers();
 
