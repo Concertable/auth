@@ -13,6 +13,7 @@ var spaClient = builder.Configuration
 builder.Services.AddRazorPages();
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddIdentityServer()
     .AddInMemoryApiScopes(Config.ApiScopes)

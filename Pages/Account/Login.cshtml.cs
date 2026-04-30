@@ -1,6 +1,4 @@
-using System.Security.Claims;
 using Concertable.Auth.Services;
-using Concertable.User.Contracts;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -11,18 +9,13 @@ namespace Concertable.Auth.Pages.Account;
 
 public sealed class LoginModel : PageModel
 {
-    private readonly IUserModule userModule;
+    private readonly IAuthService authService;
     private readonly IIdentityServerInteractionService interaction;
-    private readonly IPasswordHasher passwordHasher;
 
-    public LoginModel(
-        IUserModule userModule,
-        IIdentityServerInteractionService interaction,
-        IPasswordHasher passwordHasher)
+    public LoginModel(IAuthService authService, IIdentityServerInteractionService interaction)
     {
-        this.userModule = userModule;
+        this.authService = authService;
         this.interaction = interaction;
-        this.passwordHasher = passwordHasher;
     }
 
     [BindProperty] public string Email { get; set; } = string.Empty;
@@ -33,18 +26,14 @@ public sealed class LoginModel : PageModel
 
     public void OnGet() { }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var creds = await userModule.GetCredentialsByEmailAsync(Email);
-        if (creds is null || !passwordHasher.Verify(Password, creds.PasswordHash))
+        var principal = await authService.LoginAsync(Email, Password, ct);
+        if (principal is null)
         {
             ErrorMessage = "Invalid email or password.";
             return Page();
         }
-
-        var claims = new List<Claim> { new("sub", creds.Id.ToString()) };
-        var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
 
         await HttpContext.SignInAsync(IdentityServerConstants.DefaultCookieAuthenticationScheme, principal);
 
