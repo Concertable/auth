@@ -1,9 +1,0 @@
-using NetTopologySuite.Geometries;
-
-namespace Concertable.Application.Interfaces.Geometry;
-
-public interface IGeometryProvider
-{
-    Point? CreatePoint(double? latitude, double? longitude);
-    Point CreatePoint(double latitude, double longitude);
-}

@@ -1,2 +1,0 @@
-#!/bin/sh
-cd app && npx prettier --write "src/**/*.{ts,tsx}" && git add -u
