@@ -13,7 +13,7 @@ public sealed class ForgotPasswordModel : PageModel
         this.authService = authService;
     }
 
-    [BindProperty] public string Email { get; set; } = string.Empty;
+    [BindProperty] public string Email { get; set; } = null!;
     public bool Submitted { get; private set; }
 
     public void OnGet() { }

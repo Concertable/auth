@@ -1,19 +1,21 @@
 using Concertable.Auth.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Concertable.Auth.Pages.Account;
 
-public sealed class ResetPasswordModel : PageModel
+[Authorize]
+public sealed class ChangePasswordModel : PageModel
 {
     private readonly IAuthService authService;
 
-    public ResetPasswordModel(IAuthService authService)
+    public ChangePasswordModel(IAuthService authService)
     {
         this.authService = authService;
     }
 
-    [BindProperty(SupportsGet = true)] public string Token { get; set; } = null!;
+    [BindProperty] public string CurrentPassword { get; set; } = null!;
     [BindProperty] public string NewPassword { get; set; } = null!;
 
     public bool Success { get; private set; }
@@ -23,15 +25,16 @@ public sealed class ResetPasswordModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(Token))
+        var sub = User.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(sub, out var userId))
         {
-            ErrorMessage = "Invalid or expired reset link.";
+            ErrorMessage = "Could not identify your account.";
             return Page();
         }
 
-        Success = await authService.ResetPasswordAsync(Token, NewPassword, ct);
+        Success = await authService.ChangePasswordAsync(userId, CurrentPassword, NewPassword, ct);
         if (!Success)
-            ErrorMessage = "Invalid or expired reset link.";
+            ErrorMessage = "Current password is incorrect.";
 
         return Page();
     }

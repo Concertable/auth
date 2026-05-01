@@ -31,9 +31,37 @@ internal sealed class AuthService : IAuthService
         if (creds is null || !passwordHasher.Verify(password, creds.PasswordHash))
             return null;
 
+        if (!creds.IsEmailVerified)
+            return null;
+
         var claims = new List<Claim> { new("sub", creds.Id.ToString()) };
         var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
         return new ClaimsPrincipal(identity);
+    }
+
+    public async Task<RegisterResult> RegisterAsync(string email, string password, Role role, string verifyUrl, CancellationToken ct = default)
+    {
+        if (!Enum.IsDefined(role)) return RegisterResult.InvalidRole;
+        if (role == Role.Admin) return RegisterResult.RoleNotAllowed;
+        if (await userModule.EmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
+
+        await userModule.CreateAsync(email, passwordHasher.Hash(password), role, ct);
+
+        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
+        if (creds is not null)
+            await SendEmailVerificationAsync(creds.Id, verifyUrl, ct);
+
+        return RegisterResult.Success;
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        var creds = await userModule.GetCredentialsByIdAsync(userId, ct);
+        if (creds is null || !passwordHasher.Verify(currentPassword, creds.PasswordHash))
+            return false;
+
+        await userModule.SetPasswordHashAsync(userId, passwordHasher.Hash(newPassword), ct);
+        return true;
     }
 
     public async Task<string?> LogoutAsync(string? logoutId, CancellationToken ct = default)

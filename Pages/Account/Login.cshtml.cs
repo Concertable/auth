@@ -18,8 +18,8 @@ public sealed class LoginModel : PageModel
         this.interaction = interaction;
     }
 
-    [BindProperty] public string Email { get; set; } = string.Empty;
-    [BindProperty] public string Password { get; set; } = string.Empty;
+    [BindProperty] public string Email { get; set; } = null!;
+    [BindProperty] public string Password { get; set; } = null!;
     [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
 
     public string? ErrorMessage { get; private set; }
