@@ -13,8 +13,8 @@ public sealed class ResetPasswordModel : PageModel
         this.authService = authService;
     }
 
-    [BindProperty(SupportsGet = true)] public string Token { get; set; } = string.Empty;
-    [BindProperty] public string NewPassword { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public string Token { get; set; } = null!;
+    [BindProperty] public string NewPassword { get; set; } = null!;
 
     public bool Success { get; private set; }
     public string? ErrorMessage { get; private set; }
