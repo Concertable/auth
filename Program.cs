@@ -8,6 +8,8 @@ using Concertable.Data.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.User.Infrastructure.Extensions;
+using Duende.IdentityServer.EntityFramework.DbContexts;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,14 +37,29 @@ builder.Services.AddUserModule(builder.Configuration);
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
+
 builder.Services.AddIdentityServer()
     .AddInMemoryApiScopes(Config.ApiScopes)
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryClients(Config.Clients(spaClient))
     .AddProfileService<ProfileService>()
+    .AddOperationalStore(options =>
+    {
+        options.ConfigureDbContext = b => b.UseSqlServer(connectionString,
+            sql => sql.MigrationsAssembly(migrationsAssembly));
+        options.DefaultSchema = "idsrv";
+    })
     .AddDeveloperSigningCredential();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var grants = scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
+    await grants.Database.MigrateAsync();
+}
 
 app.MapDefaultEndpoints();
 
