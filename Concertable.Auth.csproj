@@ -10,6 +10,10 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="Duende.IdentityServer" Version="7.4.7" />
     <PackageReference Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
