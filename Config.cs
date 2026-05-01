@@ -10,6 +10,15 @@ public static class Config
         new ApiScope("concertable.api", "Concertable API")
     ];
 
+    public static IEnumerable<ApiResource> ApiResources =>
+    [
+        new ApiResource("concertable.api", "Concertable API")
+        {
+            Scopes = { "concertable.api" },
+            UserClaims = { "role" }
+        }
+    ];
+
     public static IEnumerable<IdentityResource> IdentityResources =>
     [
         new IdentityResources.OpenId(),
