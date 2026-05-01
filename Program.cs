@@ -42,6 +42,7 @@ var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
 builder.Services.AddIdentityServer()
     .AddInMemoryApiScopes(Config.ApiScopes)
+    .AddInMemoryApiResources(Config.ApiResources)
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryClients(Config.Clients(spaClient))
     .AddProfileService<ProfileService>()
