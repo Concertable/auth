@@ -26,6 +26,14 @@ public static class Config
         new IdentityResource("roles", "User roles", ["role"])
     ];
 
+    public static Client TestClient => new Client
+    {
+        ClientId = "concertable-test",
+        AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+        RequireClientSecret = false,
+        AllowedScopes = { "openid", "concertable.api" },
+    };
+
     public static IEnumerable<Client> Clients(SpaClientSettings spa) =>
     [
         new Client
