@@ -9,6 +9,7 @@ using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.User.Infrastructure.Extensions;
 using Duende.IdentityServer.EntityFramework.DbContexts;
+using Duende.IdentityServer.Models;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 
@@ -40,11 +41,15 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
-builder.Services.AddIdentityServer()
+var clients = new List<Client>(Config.Clients(spaClient));
+if (builder.Environment.IsEnvironment("E2E"))
+    clients.Add(Config.TestClient);
+
+var isBuilder = builder.Services.AddIdentityServer()
     .AddInMemoryApiScopes(Config.ApiScopes)
     .AddInMemoryApiResources(Config.ApiResources)
     .AddInMemoryIdentityResources(Config.IdentityResources)
-    .AddInMemoryClients(Config.Clients(spaClient))
+    .AddInMemoryClients(clients)
     .AddProfileService<ProfileService>()
     .AddOperationalStore(options =>
     {
@@ -53,6 +58,9 @@ builder.Services.AddIdentityServer()
         options.DefaultSchema = "idsrv";
     })
     .AddDeveloperSigningCredential();
+
+if (builder.Environment.IsEnvironment("E2E"))
+    isBuilder.AddResourceOwnerValidator<ResourceOwnerPasswordValidator>();
 
 var app = builder.Build();
 
