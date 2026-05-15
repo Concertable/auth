@@ -1,5 +1,6 @@
 using Concertable.Application.Interfaces.Geometry;
 using Concertable.Auth;
+using Microsoft.AspNetCore.HttpOverrides;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
 using Concertable.Authorization.Infrastructure.Extensions;
@@ -23,6 +24,14 @@ var spaClient = builder.Configuration
 
 builder.Services.AddRazorPages();
 
+if (builder.Environment.IsDevelopment())
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+
 builder.Services.AddKeyedSingleton<IGeometryProvider, GeographicGeometryProvider>(GeometryProviderType.Geographic, (_, _) =>
     new GeographicGeometryProvider(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326)));
 builder.Services.AddKeyedSingleton<IGeometryProvider, MetricGeometryProvider>(GeometryProviderType.Metric, (_, _) =>
@@ -41,11 +50,18 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
-var clients = new List<Client>(Config.Clients(spaClient));
+var expoGoRedirectUri = builder.Configuration["Auth:ExpoGoRedirectUri"];
+var clients = new List<Client>(Config.Clients(spaClient)) { Config.MobileClient(expoGoRedirectUri) };
 if (builder.Environment.IsEnvironment("E2E"))
     clients.Add(Config.TestClient);
 
-var isBuilder = builder.Services.AddIdentityServer()
+var publicUrl = builder.Configuration["Auth:PublicUrl"];
+
+var isBuilder = builder.Services.AddIdentityServer(options =>
+{
+    if (!string.IsNullOrEmpty(publicUrl))
+        options.IssuerUri = publicUrl;
+})
     .AddInMemoryApiScopes(Config.ApiScopes)
     .AddInMemoryApiResources(Config.ApiResources)
     .AddInMemoryIdentityResources(Config.IdentityResources)
@@ -72,6 +88,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapDefaultEndpoints();
 
+app.UseForwardedHeaders();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseIdentityServer();
