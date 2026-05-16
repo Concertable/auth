@@ -14,7 +14,8 @@ internal sealed class ResourceOwnerPasswordValidator : IResourceOwnerPasswordVal
 
     public async Task ValidateAsync(ResourceOwnerPasswordValidationContext context)
     {
-        var principal = await authService.LoginAsync(context.UserName, context.Password);
+        var role = ClientRoleResolver.ResolveFromClientId(context.Request.Client.ClientId);
+        var principal = await authService.LoginAsync(context.UserName, context.Password, role);
         if (principal is null)
         {
             context.Result = new GrantValidationResult(TokenRequestErrors.InvalidGrant, "Invalid credentials");

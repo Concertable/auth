@@ -25,9 +25,9 @@ internal sealed class AuthService : IAuthService
         this.emailService = emailService;
     }
 
-    public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default)
+    public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, Role? role, CancellationToken ct = default)
     {
-        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
+        var creds = await userModule.GetCredentialsByEmailAsync(email, role, ct);
         if (creds is null || !passwordHasher.Verify(password, creds.PasswordHash))
             return null;
 
@@ -43,11 +43,11 @@ internal sealed class AuthService : IAuthService
     {
         if (!Enum.IsDefined(role)) return RegisterResult.InvalidRole;
         if (role == Role.Admin) return RegisterResult.RoleNotAllowed;
-        if (await userModule.EmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
+        if (await userModule.EmailExistsAsync(email, role, ct)) return RegisterResult.EmailAlreadyExists;
 
         await userModule.CreateAsync(email, passwordHasher.Hash(password), role, ct);
 
-        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
+        var creds = await userModule.GetCredentialsByEmailAsync(email, role, ct);
         if (creds is not null)
             await SendEmailVerificationAsync(creds.Id, verifyUrl, ct);
 
@@ -86,9 +86,9 @@ internal sealed class AuthService : IAuthService
     public Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default) =>
         userModule.VerifyEmailWithTokenAsync(token, ct);
 
-    public async Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
+    public async Task SendPasswordResetAsync(string email, Role role, string resetUrl, CancellationToken ct = default)
     {
-        var token = await userModule.CreatePasswordResetTokenAsync(email, ct);
+        var token = await userModule.CreatePasswordResetTokenAsync(email, role, ct);
         if (token is null) return;
 
         var link = $"{resetUrl}?token={Uri.EscapeDataString(token)}";
