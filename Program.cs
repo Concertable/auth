@@ -51,7 +51,12 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
 var expoGoRedirectUri = builder.Configuration["Auth:ExpoGoRedirectUri"];
-var clients = new List<Client>(Config.Clients(spaClient)) { Config.MobileClient(expoGoRedirectUri) };
+var clients = new List<Client>(Config.WebClients(spaClient))
+{
+    Config.CustomerMobileClient(expoGoRedirectUri),
+    Config.VenueMobileClient(expoGoRedirectUri),
+    Config.ArtistMobileClient(expoGoRedirectUri),
+};
 if (builder.Environment.IsEnvironment("E2E"))
     clients.Add(Config.TestClient);
 
