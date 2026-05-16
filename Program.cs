@@ -50,12 +50,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
-var expoGoRedirectUri = builder.Configuration["Auth:ExpoGoRedirectUri"];
 var clients = new List<Client>(Config.WebClients(spaClient))
 {
-    Config.CustomerMobileClient(expoGoRedirectUri),
-    Config.VenueMobileClient(expoGoRedirectUri),
-    Config.ArtistMobileClient(expoGoRedirectUri),
+    Config.CustomerMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Customer"]),
+    Config.VenueMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Venue"]),
+    Config.ArtistMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Artist"]),
 };
 if (builder.Environment.IsEnvironment("E2E"))
     clients.Add(Config.TestClient);
