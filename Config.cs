@@ -1,4 +1,5 @@
 using Concertable.Auth.Settings;
+using Concertable.User.Contracts;
 using Duende.IdentityServer.Models;
 
 namespace Concertable.Auth;
@@ -26,22 +27,41 @@ public static class Config
         new IdentityResource("roles", "User roles", ["role"])
     ];
 
-    public static Client MobileClient(string? expoGoRedirectUri = null)
+    public static IReadOnlyDictionary<string, Role> ClientRoleMap { get; } = new Dictionary<string, Role>
     {
-        var redirectUris = new HashSet<string> { "concertable://" };
+        ["customer-web"] = Role.Customer,
+        ["customer-mobile"] = Role.Customer,
+        ["venue-web"] = Role.VenueManager,
+        ["venue-mobile"] = Role.VenueManager,
+        ["artist-web"] = Role.ArtistManager,
+        ["artist-mobile"] = Role.ArtistManager,
+    };
+
+    public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient("customer-mobile", "concertable-customer://", expoGoRedirectUri);
+
+    public static Client VenueMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient("venue-mobile", "concertable-venue://", expoGoRedirectUri);
+
+    public static Client ArtistMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient("artist-mobile", "concertable-artist://", expoGoRedirectUri);
+
+    private static Client MobileClient(string clientId, string scheme, string? expoGoRedirectUri)
+    {
+        var redirectUris = new HashSet<string> { scheme };
         if (!string.IsNullOrEmpty(expoGoRedirectUri))
             redirectUris.Add(expoGoRedirectUri);
 
         return new Client
         {
-            ClientId = "concertable-mobile",
+            ClientId = clientId,
 
             AllowedGrantTypes = GrantTypes.Code,
             RequirePkce = true,
             RequireClientSecret = false,
 
             RedirectUris = redirectUris,
-            PostLogoutRedirectUris = { "concertable://" },
+            PostLogoutRedirectUris = { scheme },
 
             AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
 
@@ -62,28 +82,32 @@ public static class Config
         AllowedScopes = { "openid", "concertable.api" },
     };
 
-    public static IEnumerable<Client> Clients(SpaClientSettings spa) =>
+    public static IEnumerable<Client> WebClients(SpaClientSettings spa) =>
     [
-        new Client
-        {
-            ClientId = "concertable-spa",
-
-            AllowedGrantTypes = GrantTypes.Code,
-            RequirePkce = true,
-            RequireClientSecret = false,
-
-            RedirectUris = spa.RedirectUris,
-            PostLogoutRedirectUris = spa.PostLogoutRedirectUris,
-            AllowedCorsOrigins = spa.AllowedCorsOrigins,
-
-            AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
-
-            AllowOfflineAccess = true,
-            AccessTokenLifetime = 900,
-
-            RefreshTokenUsage = TokenUsage.OneTimeOnly,
-            RefreshTokenExpiration = TokenExpiration.Sliding,
-            SlidingRefreshTokenLifetime = 60 * 60 * 24 * 30
-        }
+        WebClient("customer-web", spa.Customer),
+        WebClient("venue-web", spa.Venue),
+        WebClient("artist-web", spa.Artist),
     ];
+
+    private static Client WebClient(string clientId, WebClientSettings settings) => new()
+    {
+        ClientId = clientId,
+
+        AllowedGrantTypes = GrantTypes.Code,
+        RequirePkce = true,
+        RequireClientSecret = false,
+
+        RedirectUris = settings.RedirectUris,
+        PostLogoutRedirectUris = settings.PostLogoutRedirectUris,
+        AllowedCorsOrigins = settings.AllowedCorsOrigins,
+
+        AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+
+        AllowOfflineAccess = true,
+        AccessTokenLifetime = 900,
+
+        RefreshTokenUsage = TokenUsage.OneTimeOnly,
+        RefreshTokenExpiration = TokenExpiration.Sliding,
+        SlidingRefreshTokenLifetime = 60 * 60 * 24 * 30
+    };
 }

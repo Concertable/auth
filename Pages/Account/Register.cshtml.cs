@@ -1,5 +1,5 @@
 using Concertable.Auth.Services;
-using Concertable.User.Contracts;
+using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -8,15 +8,17 @@ namespace Concertable.Auth.Pages.Account;
 public sealed class RegisterModel : PageModel
 {
     private readonly IAuthService authService;
+    private readonly IIdentityServerInteractionService interaction;
 
-    public RegisterModel(IAuthService authService)
+    public RegisterModel(IAuthService authService, IIdentityServerInteractionService interaction)
     {
         this.authService = authService;
+        this.interaction = interaction;
     }
 
     [BindProperty] public string Email { get; set; } = null!;
     [BindProperty] public string Password { get; set; } = null!;
-    [BindProperty] public Role Role { get; set; }
+    [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
 
     public bool Submitted { get; private set; }
     public string? ErrorMessage { get; private set; }
@@ -25,8 +27,15 @@ public sealed class RegisterModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        var role = await ClientRoleResolver.ResolveFromReturnUrlAsync(interaction, ReturnUrl);
+        if (role is null)
+        {
+            ErrorMessage = "Sign up must be initiated from a Concertable surface.";
+            return Page();
+        }
+
         var verifyUrl = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail";
-        var result = await authService.RegisterAsync(Email, Password, Role, verifyUrl, ct);
+        var result = await authService.RegisterAsync(Email, Password, role.Value, verifyUrl, ct);
 
         switch (result)
         {
