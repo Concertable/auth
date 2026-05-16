@@ -26,6 +26,34 @@ public static class Config
         new IdentityResource("roles", "User roles", ["role"])
     ];
 
+    public static Client MobileClient(string? expoGoRedirectUri = null)
+    {
+        var redirectUris = new HashSet<string> { "concertable://" };
+        if (!string.IsNullOrEmpty(expoGoRedirectUri))
+            redirectUris.Add(expoGoRedirectUri);
+
+        return new Client
+        {
+            ClientId = "concertable-mobile",
+
+            AllowedGrantTypes = GrantTypes.Code,
+            RequirePkce = true,
+            RequireClientSecret = false,
+
+            RedirectUris = redirectUris,
+            PostLogoutRedirectUris = { "concertable://" },
+
+            AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+
+            AllowOfflineAccess = true,
+            AccessTokenLifetime = 900,
+
+            RefreshTokenUsage = TokenUsage.OneTimeOnly,
+            RefreshTokenExpiration = TokenExpiration.Sliding,
+            SlidingRefreshTokenLifetime = 60 * 60 * 24 * 30
+        };
+    }
+
     public static Client TestClient => new Client
     {
         ClientId = "concertable-test",
