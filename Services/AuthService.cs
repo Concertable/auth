@@ -86,7 +86,7 @@ internal sealed class AuthService : IAuthService
     public Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default) =>
         userModule.VerifyEmailWithTokenAsync(token, ct);
 
-    public async Task SendPasswordResetAsync(string email, Role role, string resetUrl, CancellationToken ct = default)
+    public async Task SendPasswordResetAsync(string email, Role? role, string resetUrl, CancellationToken ct = default)
     {
         var token = await userModule.CreatePasswordResetTokenAsync(email, role, ct);
         if (token is null) return;
