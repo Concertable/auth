@@ -24,7 +24,7 @@ public sealed class ForgotPasswordModel : PageModel
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
         var resetUrl = $"{Request.Scheme}://{Request.Host}/Account/ResetPassword";
-        await authService.SendPasswordResetAsync(Email, null, resetUrl, ct);
+        await authService.SendPasswordResetAsync(Email, resetUrl, ct);
         Submitted = true;
         return Page();
     }
