@@ -7,11 +7,12 @@ public sealed class SpaClientSettings
     public WebClientSettings Customer { get; init; } = new();
     public WebClientSettings Venue { get; init; } = new();
     public WebClientSettings Artist { get; init; } = new();
+    public WebClientSettings Business { get; init; } = new();
 }
 
 public sealed class WebClientSettings
 {
-    public string[] RedirectUris { get; init; } = [];
-    public string[] PostLogoutRedirectUris { get; init; } = [];
+    public string RedirectUri { get; init; } = string.Empty;
+    public string PostLogoutRedirectUri { get; init; } = string.Empty;
     public string[] AllowedCorsOrigins { get; init; } = [];
 }
