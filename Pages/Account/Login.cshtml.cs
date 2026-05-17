@@ -28,14 +28,7 @@ public sealed class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        var role = await ClientRoleResolver.ResolveFromReturnUrlAsync(interaction, ReturnUrl);
-        if (role is null)
-        {
-            ErrorMessage = "Sign in must be initiated from a Concertable surface.";
-            return Page();
-        }
-
-        var principal = await authService.LoginAsync(Email, Password, role, ct);
+        var principal = await authService.LoginAsync(Email, Password, ct);
         if (principal is null)
         {
             ErrorMessage = "Invalid email or password.";

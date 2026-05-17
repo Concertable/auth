@@ -46,6 +46,7 @@ builder.Services.AddUserModule(builder.Configuration);
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IClientRoleResolver, ClientRoleResolver>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
@@ -53,8 +54,7 @@ var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 var clients = new List<Client>(Config.WebClients(spaClient))
 {
     Config.CustomerMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Customer"]),
-    Config.VenueMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Venue"]),
-    Config.ArtistMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Artist"]),
+    Config.BusinessMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
 };
 if (builder.Environment.IsEnvironment("E2E"))
     clients.Add(Config.TestClient);
