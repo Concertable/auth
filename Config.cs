@@ -27,24 +27,11 @@ public static class Config
         new IdentityResource("roles", "User roles", ["role"])
     ];
 
-    public static IReadOnlyDictionary<string, Role> ClientRoleMap { get; } = new Dictionary<string, Role>
-    {
-        ["customer-web"] = Role.Customer,
-        ["customer-mobile"] = Role.Customer,
-        ["venue-web"] = Role.VenueManager,
-        ["venue-mobile"] = Role.VenueManager,
-        ["artist-web"] = Role.ArtistManager,
-        ["artist-mobile"] = Role.ArtistManager,
-    };
-
     public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
         MobileClient("customer-mobile", "concertable-customer://", expoGoRedirectUri);
 
-    public static Client VenueMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient("venue-mobile", "concertable-venue://", expoGoRedirectUri);
-
-    public static Client ArtistMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient("artist-mobile", "concertable-artist://", expoGoRedirectUri);
+    public static Client BusinessMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient("business-mobile", "concertable-business://", expoGoRedirectUri);
 
     private static Client MobileClient(string clientId, string scheme, string? expoGoRedirectUri)
     {
@@ -87,6 +74,7 @@ public static class Config
         WebClient("customer-web", spa.Customer),
         WebClient("venue-web", spa.Venue),
         WebClient("artist-web", spa.Artist),
+        WebClient("business-web", spa.Business),
     ];
 
     private static Client WebClient(string clientId, WebClientSettings settings) => new()
@@ -97,8 +85,8 @@ public static class Config
         RequirePkce = true,
         RequireClientSecret = false,
 
-        RedirectUris = settings.RedirectUris,
-        PostLogoutRedirectUris = settings.PostLogoutRedirectUris,
+        RedirectUris = [settings.RedirectUri],
+        PostLogoutRedirectUris = [settings.PostLogoutRedirectUri],
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
         AllowedScopes = { "openid", "profile", "roles", "concertable.api" },

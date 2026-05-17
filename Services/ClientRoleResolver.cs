@@ -3,18 +3,36 @@ using Duende.IdentityServer.Services;
 
 namespace Concertable.Auth.Services;
 
-internal static class ClientRoleResolver
+internal sealed class ClientRoleResolver : IClientRoleResolver
 {
-    public static async Task<Role?> ResolveFromReturnUrlAsync(IIdentityServerInteractionService interaction, string? returnUrl)
+    private static readonly IReadOnlyDictionary<string, Role[]> clientRoleMap = new Dictionary<string, Role[]>
     {
-        if (string.IsNullOrEmpty(returnUrl)) return null;
+        ["customer-web"]    = [Role.Customer],
+        ["customer-mobile"] = [Role.Customer],
+        ["business-web"]    = [Role.VenueManager, Role.ArtistManager],
+        ["business-mobile"] = [Role.VenueManager, Role.ArtistManager],
+    };
+
+    private readonly IIdentityServerInteractionService interaction;
+
+    public ClientRoleResolver(IIdentityServerInteractionService interaction)
+        => this.interaction = interaction;
+
+    public async Task<RoleResolution> ResolveRoleAsync(string? returnUrl, string? selectedRole)
+    {
+        if (string.IsNullOrEmpty(returnUrl)) return new RoleResolution.UnknownClient();
         var context = await interaction.GetAuthorizationContextAsync(returnUrl);
         var clientId = context?.Client?.ClientId;
-        return ResolveFromClientId(clientId);
-    }
+        if (clientId is null) return new RoleResolution.UnknownClient();
 
-    public static Role? ResolveFromClientId(string? clientId) =>
-        clientId is not null && Config.ClientRoleMap.TryGetValue(clientId, out var role)
-            ? role
-            : null;
+        if (!clientRoleMap.TryGetValue(clientId, out var roles))
+            return new RoleResolution.UnknownClient();
+
+        if (roles.Length == 1)
+            return new RoleResolution.Resolved(roles[0]);
+
+        return Enum.TryParse<Role>(selectedRole, out var selected) && roles.Contains(selected)
+            ? new RoleResolution.Resolved(selected)
+            : new RoleResolution.InvalidSelection();
+    }
 }

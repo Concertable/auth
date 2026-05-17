@@ -14,7 +14,7 @@ public interface IAuthService
     Task SendEmailVerificationAsync(Guid userId, string verifyUrl, CancellationToken ct = default);
     Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default);
 
-    Task SendPasswordResetAsync(string email, Role role, string resetUrl, CancellationToken ct = default);
+    Task SendPasswordResetAsync(string email, Role? role, string resetUrl, CancellationToken ct = default);
     Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default);
 }
 
