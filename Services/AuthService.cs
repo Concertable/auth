@@ -47,7 +47,7 @@ internal sealed class AuthService : IAuthService
 
         await userModule.CreateAsync(email, passwordHasher.Hash(password), role, ct);
 
-        var creds = await userModule.GetCredentialsByEmailAsync(email, role, ct);
+        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
         if (creds is not null)
             await SendEmailVerificationAsync(creds.Id, verifyUrl, ct);
 
