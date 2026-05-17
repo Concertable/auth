@@ -25,9 +25,9 @@ internal sealed class AuthService : IAuthService
         this.emailService = emailService;
     }
 
-    public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, Role? role, CancellationToken ct = default)
+    public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default)
     {
-        var creds = await userModule.GetCredentialsByEmailAsync(email, role, ct);
+        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
         if (creds is null || !passwordHasher.Verify(password, creds.PasswordHash))
             return null;
 
@@ -86,9 +86,9 @@ internal sealed class AuthService : IAuthService
     public Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default) =>
         userModule.VerifyEmailWithTokenAsync(token, ct);
 
-    public async Task SendPasswordResetAsync(string email, Role? role, string resetUrl, CancellationToken ct = default)
+    public async Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
     {
-        var token = await userModule.CreatePasswordResetTokenAsync(email, role, ct);
+        var token = await userModule.CreatePasswordResetTokenAsync(email, ct);
         if (token is null) return;
 
         var link = $"{resetUrl}?token={Uri.EscapeDataString(token)}";
