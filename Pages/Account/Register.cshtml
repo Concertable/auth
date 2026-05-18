@@ -7,27 +7,49 @@
 
     @if (Model.Submitted)
     {
-        <p class="text-gray-700 text-sm">Account created. Check your email for a verification link.</p>
-        <a href="/Account/Login" class="text-primary hover:underline text-sm">Sign in</a>
+        <p data-testid="success" class="text-gray-700 text-sm">Account created. Check your email for a verification link.</p>
+        <a data-testid="signin-link" href="/Account/Login?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "")" class="text-primary hover:underline text-sm">Sign in</a>
     }
     else
     {
         <form method="post" class="space-y-4">
             @if (!string.IsNullOrEmpty(Model.ErrorMessage))
             {
-                <div class="text-red-600 text-sm">@Model.ErrorMessage</div>
+                <div data-testid="error" class="text-red-600 text-sm">@Model.ErrorMessage</div>
             }
 
             <input asp-for="Email" type="email"
+                   data-testid="email"
                    class="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
                    placeholder="Email" required />
             <input asp-for="Password" type="password"
+                   data-testid="password"
                    class="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
                    placeholder="Password" required minlength="8" />
+
+            @if (Model.AvailableRoles.Count > 1)
+            {
+                <fieldset class="space-y-2">
+                    <legend class="text-sm font-medium text-gray-700">Signing up as</legend>
+                    @foreach (var role in Model.AvailableRoles)
+                    {
+                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="radio" asp-for="SelectedRole" value="@role"
+                                   data-testid="@(System.Text.RegularExpressions.Regex.Replace(role.ToString(), "(?<!^)([A-Z])", "-$1").ToLower())" required />
+                            <span>@role</span>
+                        </label>
+                    }
+                </fieldset>
+            }
+            else if (Model.AvailableRoles.Count == 1)
+            {
+                <input type="hidden" asp-for="SelectedRole" value="@Model.AvailableRoles[0]" />
+            }
 
             <input asp-for="ReturnUrl" type="hidden" />
 
             <button type="submit"
+                    data-testid="submit"
                     class="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-semibold transition">
                 Create account
             </button>

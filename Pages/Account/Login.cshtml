@@ -32,6 +32,6 @@
     </p>
 
     <p class="text-sm text-gray-500 text-center">
-        Don't have an account? <a href="/Account/Register?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "")" class="text-primary hover:underline">Sign up</a>
+        Don't have an account? <a data-testid="signup-link" href="/Account/Register?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "")" class="text-primary hover:underline">Sign up</a>
     </p>
 </form>

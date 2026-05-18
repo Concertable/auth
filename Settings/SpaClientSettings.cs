@@ -7,7 +7,6 @@ public sealed class SpaClientSettings
     public WebClientSettings Customer { get; init; } = new();
     public WebClientSettings Venue { get; init; } = new();
     public WebClientSettings Artist { get; init; } = new();
-    public WebClientSettings Business { get; init; } = new();
 }
 
 public sealed class WebClientSettings

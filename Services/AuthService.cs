@@ -78,9 +78,7 @@ internal sealed class AuthService : IAuthService
         var creds = await userModule.GetCredentialsByIdAsync(userId, ct);
         if (creds is null) return;
 
-        var link = $"{verifyUrl}?token={Uri.EscapeDataString(token)}";
-        await emailService.SendEmailAsync(creds.Email, "Verify your email",
-            $"Click here to verify your email: {link}");
+        await emailService.SendVerificationAsync(creds.Email, token, verifyUrl, ct);
     }
 
     public Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default) =>
