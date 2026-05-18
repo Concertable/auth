@@ -74,7 +74,6 @@ public static class Config
         WebClient("customer-web", spa.Customer),
         WebClient("venue-web", spa.Venue),
         WebClient("artist-web", spa.Artist),
-        WebClient("business-web", spa.Business),
     ];
 
     private static Client WebClient(string clientId, WebClientSettings settings) => new()
