@@ -11,11 +11,13 @@ public sealed class LoginModel : PageModel
 {
     private readonly IAuthService authService;
     private readonly IIdentityServerInteractionService interaction;
+    private readonly IClientRoleResolver clientRoleResolver;
 
-    public LoginModel(IAuthService authService, IIdentityServerInteractionService interaction)
+    public LoginModel(IAuthService authService, IIdentityServerInteractionService interaction, IClientRoleResolver clientRoleResolver)
     {
         this.authService = authService;
         this.interaction = interaction;
+        this.clientRoleResolver = clientRoleResolver;
     }
 
     [BindProperty] public string Email { get; set; } = null!;
@@ -33,6 +35,17 @@ public sealed class LoginModel : PageModel
         {
             ErrorMessage = "Invalid email or password.";
             return Page();
+        }
+
+        var allowedRoles = await clientRoleResolver.GetAllowedRolesAsync(ReturnUrl);
+        if (allowedRoles.Count > 0)
+        {
+            var userRole = principal.FindFirst("role")?.Value;
+            if (userRole is null || !allowedRoles.Any(r => r.ToString() == userRole))
+            {
+                ErrorMessage = "This account doesn't have access to this application.";
+                return Page();
+            }
         }
 
         await HttpContext.SignInAsync(IdentityServerConstants.DefaultCookieAuthenticationScheme, principal);
