@@ -71,6 +71,7 @@ var isBuilder = builder.Services.AddIdentityServer(options =>
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryClients(clients)
     .AddProfileService<ProfileService>()
+    .AddAuthorizeInteractionResponseGenerator<RoleEnforcingInteractionResponseGenerator>()
     .AddOperationalStore(options =>
     {
         options.ConfigureDbContext = b => b.UseSqlServer(connectionString,
