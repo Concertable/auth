@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Concertable.User.Contracts;
 using Duende.IdentityServer.Services;
 
@@ -5,14 +6,14 @@ namespace Concertable.Auth.Services;
 
 internal sealed class ClientRoleResolver : IClientRoleResolver
 {
-    private static readonly IReadOnlyDictionary<string, Role[]> clientRoleMap = new Dictionary<string, Role[]>
+    private static readonly FrozenDictionary<string, Role[]> clientRoleMap = new Dictionary<string, Role[]>
     {
         ["customer-web"]    = [Role.Customer],
         ["customer-mobile"] = [Role.Customer],
         ["venue-web"]       = [Role.VenueManager],
         ["artist-web"]      = [Role.ArtistManager],
         ["business-mobile"] = [Role.VenueManager, Role.ArtistManager],
-    };
+    }.ToFrozenDictionary();
 
     private readonly IIdentityServerInteractionService interaction;
 
