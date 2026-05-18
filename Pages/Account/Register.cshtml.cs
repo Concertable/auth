@@ -1,4 +1,5 @@
 using Concertable.Auth.Services;
+using Concertable.User.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -22,11 +23,14 @@ public sealed class RegisterModel : PageModel
 
     public bool Submitted { get; private set; }
     public string? ErrorMessage { get; private set; }
+    public IReadOnlyList<Role> AvailableRoles { get; private set; } = [];
 
-    public void OnGet() { }
+    public async Task OnGetAsync() =>
+        AvailableRoles = await clientRoleResolver.GetAllowedRolesAsync(ReturnUrl);
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        AvailableRoles = await clientRoleResolver.GetAllowedRolesAsync(ReturnUrl);
         var resolution = await clientRoleResolver.ResolveRoleAsync(ReturnUrl, SelectedRole);
 
         ErrorMessage = resolution switch
