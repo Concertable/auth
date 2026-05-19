@@ -4,8 +4,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
 using Concertable.Authorization.Infrastructure.Extensions;
-using Concertable.Data.Infrastructure.Data;
-using Concertable.Data.Infrastructure.Extensions;
+using Concertable.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.User.Infrastructure.Extensions;
@@ -38,6 +39,7 @@ builder.Services.AddKeyedSingleton<IGeometryProvider, MetricGeometryProvider>(Ge
     new MetricGeometryProvider(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 3857)));
 
 builder.Services.AddSharedInfrastructure(builder.Configuration);
+builder.Services.AddSharedBlob(builder.Configuration);
 builder.Services.AddAuthorizationModule();
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<DomainEventDispatchInterceptor>();
