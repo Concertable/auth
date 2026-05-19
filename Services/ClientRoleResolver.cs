@@ -46,4 +46,10 @@ internal sealed class ClientRoleResolver : IClientRoleResolver
         if (clientId is null) return [];
         return clientRoleMap.TryGetValue(clientId, out var roles) ? roles : [];
     }
+
+    public Role? GetRequiredRoleForClient(string clientId)
+    {
+        if (!clientRoleMap.TryGetValue(clientId, out var roles)) return null;
+        return roles.Length == 1 ? roles[0] : null;
+    }
 }

@@ -34,7 +34,11 @@ internal sealed class AuthService : IAuthService
         if (!creds.IsEmailVerified)
             return null;
 
-        var claims = new List<Claim> { new("sub", creds.Id.ToString()) };
+        var claims = new List<Claim>
+        {
+            new("sub", creds.Id.ToString()),
+            new("role", creds.Role.ToString())
+        };
         var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
         return new ClaimsPrincipal(identity);
     }

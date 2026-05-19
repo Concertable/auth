@@ -6,4 +6,5 @@ public interface IClientRoleResolver
 {
     Task<RoleResolution> ResolveRoleAsync(string? returnUrl, string? selectedRole);
     Task<IReadOnlyList<Role>> GetAllowedRolesAsync(string? returnUrl);
+    Role? GetRequiredRoleForClient(string clientId);
 }
