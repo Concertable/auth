@@ -41,7 +41,6 @@ builder.Services.AddSharedInfrastructure(builder.Configuration);
 builder.Services.AddAuthorizationModule();
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<DomainEventDispatchInterceptor>();
-builder.Services.AddSharedDbContext(builder.Configuration);
 builder.Services.AddUserModule(builder.Configuration);
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
