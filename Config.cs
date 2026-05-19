@@ -1,5 +1,4 @@
 using Concertable.Auth.Settings;
-using Concertable.User.Contracts;
 using Duende.IdentityServer.Models;
 
 namespace Concertable.Auth;
@@ -15,8 +14,7 @@ public static class Config
     [
         new ApiResource("concertable.api", "Concertable API")
         {
-            Scopes = { "concertable.api" },
-            UserClaims = { "role" }
+            Scopes = { "concertable.api" }
         }
     ];
 
@@ -24,7 +22,6 @@ public static class Config
     [
         new IdentityResources.OpenId(),
         new IdentityResources.Profile(),
-        new IdentityResource("roles", "User roles", ["role"])
     ];
 
     public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
@@ -50,7 +47,7 @@ public static class Config
             RedirectUris = redirectUris,
             PostLogoutRedirectUris = { scheme },
 
-            AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+            AllowedScopes = { "openid", "profile", "concertable.api" },
 
             AllowOfflineAccess = true,
             AccessTokenLifetime = 900,
@@ -88,7 +85,7 @@ public static class Config
         PostLogoutRedirectUris = [settings.PostLogoutRedirectUri],
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
-        AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+        AllowedScopes = { "openid", "profile", "concertable.api" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,

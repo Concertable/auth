@@ -26,7 +26,6 @@ internal sealed class ProfileService : IProfileService
         {
             new("email", creds.Email),
             new("email_verified", creds.IsEmailVerified ? "true" : "false", ClaimValueTypes.Boolean),
-            new("role", creds.Role.ToString())
         };
 
         context.AddRequestedClaims(claims);
