@@ -1,3 +1,4 @@
+using Concertable.User.Contracts;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.ResponseHandling;
@@ -34,7 +35,7 @@ internal sealed class RoleEnforcingInteractionResponseGenerator : AuthorizeInter
         if (requiredRole is null) return result;
 
         var userRole = request.Subject.FindFirst("role")?.Value;
-        if (userRole is null || userRole != requiredRole.ToString())
+        if (!Enum.TryParse<Role>(userRole, out var parsedRole) || parsedRole != requiredRole)
             return new InteractionResponse { IsLogin = true };
 
         return result;

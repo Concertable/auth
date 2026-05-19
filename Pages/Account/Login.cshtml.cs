@@ -1,4 +1,5 @@
 using Concertable.Auth.Services;
+using Concertable.User.Contracts;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -40,8 +41,8 @@ public sealed class LoginModel : PageModel
         var allowedRoles = await clientRoleResolver.GetAllowedRolesAsync(ReturnUrl);
         if (allowedRoles.Count > 0)
         {
-            var userRole = principal.FindFirst("role")?.Value;
-            if (userRole is null || !allowedRoles.Any(r => r.ToString() == userRole))
+            var userRoleClaim = principal.FindFirst("role")?.Value;
+            if (!Enum.TryParse<Role>(userRoleClaim, out var userRole) || !allowedRoles.Contains(userRole))
             {
                 ErrorMessage = "This account doesn't have access to this application.";
                 return Page();
