@@ -45,7 +45,6 @@ builder.Services.AddUserModule(builder.Configuration);
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IClientRoleResolver, ClientRoleResolver>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
@@ -70,7 +69,6 @@ var isBuilder = builder.Services.AddIdentityServer(options =>
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryClients(clients)
     .AddProfileService<ProfileService>()
-    .AddAuthorizeInteractionResponseGenerator<RoleEnforcingInteractionResponseGenerator>()
     .AddOperationalStore(options =>
     {
         options.ConfigureDbContext = b => b.UseSqlServer(connectionString,

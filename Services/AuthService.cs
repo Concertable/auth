@@ -34,27 +34,37 @@ internal sealed class AuthService : IAuthService
         if (!creds.IsEmailVerified)
             return null;
 
-        var claims = new List<Claim>
-        {
-            new("sub", creds.Id.ToString()),
-            new("role", creds.Role.ToString())
-        };
+        var claims = new List<Claim> { new("sub", creds.Id.ToString()) };
         var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
         return new ClaimsPrincipal(identity);
     }
 
-    public async Task<RegisterResult> RegisterAsync(string email, string password, Role role, string verifyUrl, CancellationToken ct = default)
+    public async Task<RegisterResult> RegisterCustomerAsync(string email, string password, string verifyUrl, CancellationToken ct = default)
     {
-        if (!Enum.IsDefined(role)) return RegisterResult.InvalidRole;
-        if (role == Role.Admin) return RegisterResult.RoleNotAllowed;
-        if (await userModule.EmailExistsAsync(email, role, ct)) return RegisterResult.EmailAlreadyExists;
+        if (await userModule.CustomerEmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
+        await userModule.CreateCustomerAsync(email, passwordHasher.Hash(password), ct);
+        return await SendVerificationAfterRegister(email, verifyUrl, ct);
+    }
 
-        await userModule.CreateAsync(email, passwordHasher.Hash(password), role, ct);
+    public async Task<RegisterResult> RegisterVenueManagerAsync(string email, string password, string verifyUrl, CancellationToken ct = default)
+    {
+        if (await userModule.VenueManagerEmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
+        await userModule.CreateVenueManagerAsync(email, passwordHasher.Hash(password), ct);
+        return await SendVerificationAfterRegister(email, verifyUrl, ct);
+    }
 
+    public async Task<RegisterResult> RegisterArtistManagerAsync(string email, string password, string verifyUrl, CancellationToken ct = default)
+    {
+        if (await userModule.ArtistManagerEmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
+        await userModule.CreateArtistManagerAsync(email, passwordHasher.Hash(password), ct);
+        return await SendVerificationAfterRegister(email, verifyUrl, ct);
+    }
+
+    private async Task<RegisterResult> SendVerificationAfterRegister(string email, string verifyUrl, CancellationToken ct)
+    {
         var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
         if (creds is not null)
             await SendEmailVerificationAsync(creds.Id, verifyUrl, ct);
-
         return RegisterResult.Success;
     }
 
