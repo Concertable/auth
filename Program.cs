@@ -6,6 +6,7 @@ using Concertable.Auth.Settings;
 using Concertable.Authorization.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
@@ -57,6 +58,7 @@ builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddOutbox(opt => opt.UseSqlServer(connectionString), runDispatcher: false);
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
 var clients = new List<Client>(Config.WebClients(spaClient))
