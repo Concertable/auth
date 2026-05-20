@@ -8,6 +8,7 @@ using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
+using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Services.Geometry;
 using Concertable.User.Infrastructure.Extensions;
@@ -42,6 +43,7 @@ builder.Services.AddKeyedSingleton<IGeometryProvider, MetricGeometryProvider>(Ge
 builder.Services.AddSharedInfrastructure(builder.Configuration);
 builder.Services.AddSharedBlob(builder.Configuration);
 builder.Services.AddSharedEmail(builder.Configuration);
+builder.Services.AddSharedGeocoding();
 builder.Services.AddAuthorizationModule();
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<DomainEventDispatchInterceptor>();
