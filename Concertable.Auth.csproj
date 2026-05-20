@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Shared\Concertable.Shared.Email\Concertable.Shared.Email.Infrastructure\Concertable.Shared.Email.Infrastructure.csproj" />
     <ProjectReference Include="..\Shared\Concertable.Shared.Geocoding\Concertable.Shared.Geocoding.Infrastructure\Concertable.Shared.Geocoding.Infrastructure.csproj" />
     <ProjectReference Include="..\Shared\Concertable.Shared.Imaging\Concertable.Shared.Imaging.Infrastructure\Concertable.Shared.Imaging.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared\Concertable.Shared.Pdf\Concertable.Shared.Pdf.Infrastructure\Concertable.Shared.Pdf.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
