@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Modules\Authorization\Concertable.Authorization.Infrastructure\Concertable.Authorization.Infrastructure.csproj" />
     <ProjectReference Include="..\Shared\Concertable.Shared.Blob\Concertable.Shared.Blob.Infrastructure\Concertable.Shared.Blob.Infrastructure.csproj" />
     <ProjectReference Include="..\Shared\Concertable.Shared.Email\Concertable.Shared.Email.Infrastructure\Concertable.Shared.Email.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared\Concertable.Shared.Geocoding\Concertable.Shared.Geocoding.Infrastructure\Concertable.Shared.Geocoding.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
