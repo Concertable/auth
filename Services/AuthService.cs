@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Concertable.DataAccess;
+using Concertable.Shared.Email;
 using Concertable.User.Contracts;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
