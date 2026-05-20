@@ -11,18 +11,18 @@ internal sealed class AuthService : IAuthService
     private readonly IUserModule userModule;
     private readonly IPasswordHasher passwordHasher;
     private readonly IIdentityServerInteractionService interaction;
-    private readonly IEmailService emailService;
+    private readonly IEmailSender emailSender;
 
     public AuthService(
         IUserModule userModule,
         IPasswordHasher passwordHasher,
         IIdentityServerInteractionService interaction,
-        IEmailService emailService)
+        IEmailSender emailSender)
     {
         this.userModule = userModule;
         this.passwordHasher = passwordHasher;
         this.interaction = interaction;
-        this.emailService = emailService;
+        this.emailSender = emailSender;
     }
 
     public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default)
@@ -92,7 +92,7 @@ internal sealed class AuthService : IAuthService
         var creds = await userModule.GetCredentialsByIdAsync(userId, ct);
         if (creds is null) return;
 
-        await emailService.SendVerificationAsync(creds.Email, token, verifyUrl, ct);
+        await emailSender.SendVerificationAsync(creds.Email, token, verifyUrl, ct);
     }
 
     public Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default) =>
@@ -104,7 +104,7 @@ internal sealed class AuthService : IAuthService
         if (token is null) return;
 
         var link = $"{resetUrl}?token={Uri.EscapeDataString(token)}";
-        await emailService.SendEmailAsync(email, "Reset your password",
+        await emailSender.SendEmailAsync(email, "Reset your password",
             $"Click here to reset your password: {link}. This link expires in 1 hour.");
     }
 
