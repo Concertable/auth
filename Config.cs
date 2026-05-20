@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Concertable.Auth.Settings;
 using Duende.IdentityServer.Models;
 
@@ -7,14 +9,15 @@ public static class Config
 {
     public static IEnumerable<ApiScope> ApiScopes =>
     [
-        new ApiScope("concertable.api", "Concertable API")
+        new ApiScope("concertable.api", "Concertable API"),
+        new ApiScope("payment:write", "Payment write access"),
     ];
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
         new ApiResource("concertable.api", "Concertable API")
         {
-            Scopes = { "concertable.api" }
+            Scopes = { "concertable.api", "payment:write" }
         }
     ];
 
@@ -94,4 +97,18 @@ public static class Config
         RefreshTokenExpiration = TokenExpiration.Sliding,
         SlidingRefreshTokenLifetime = 60 * 60 * 24 * 30
     };
+
+    public static Client ServiceClient(string clientId, string clientSecret, params string[] allowedScopes) => new()
+    {
+        ClientId = clientId,
+        ClientSecrets = { new Secret(Sha256(clientSecret)) },
+        AllowedGrantTypes = GrantTypes.ClientCredentials,
+        AllowedScopes = allowedScopes.ToList()
+    };
+
+    private static string Sha256(string value)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+        return Convert.ToHexString(hash).ToLower();
+    }
 }

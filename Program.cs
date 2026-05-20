@@ -65,6 +65,12 @@ var clients = new List<Client>(Config.WebClients(spaClient))
 {
     Config.CustomerMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Customer"]),
     Config.BusinessMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
+    Config.ServiceClient("concertable-b2b",
+        builder.Configuration["ServiceAuth:B2BClientSecret"]!,
+        "payment:write"),
+    Config.ServiceClient("concertable-customer",
+        builder.Configuration["ServiceAuth:CustomerClientSecret"]!,
+        "payment:write"),
 };
 if (builder.Environment.IsEnvironment("E2E"))
     clients.Add(Config.TestClient);
