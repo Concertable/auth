@@ -57,7 +57,7 @@ builder.Services.AddUserModule(builder.Configuration);
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("B2BDb");
 builder.Services.AddOutbox(opt => opt.UseSqlServer(connectionString), runDispatcher: false);
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
