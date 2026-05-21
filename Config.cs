@@ -109,6 +109,6 @@ public static class Config
     private static string Sha256(string value)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
-        return Convert.ToHexString(hash).ToLower();
+        return Convert.ToBase64String(hash);
     }
 }
