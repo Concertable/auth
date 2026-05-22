@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Concertable.Auth.Contracts;
 using Concertable.User.Contracts;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Models;
@@ -8,27 +9,21 @@ namespace Concertable.Auth.Services;
 
 internal sealed class ProfileService : IProfileService
 {
+    private readonly IEnumerable<IProfileClaimsProvider> claimsProviders;
     private readonly IUserModule userModule;
 
-    public ProfileService(IUserModule userModule)
+    public ProfileService(IEnumerable<IProfileClaimsProvider> claimsProviders, IUserModule userModule)
     {
+        this.claimsProviders = claimsProviders;
         this.userModule = userModule;
     }
 
     public async Task GetProfileDataAsync(ProfileDataRequestContext context)
     {
         var userId = Guid.Parse(context.Subject.GetSubjectId());
-
-        var user = await userModule.GetByIdAsync(userId);
-        if (user is null) return;
-
-        var claims = new List<Claim>
-        {
-            new("email", user.Email),
-            new("email_verified", user.IsEmailVerified ? "true" : "false", ClaimValueTypes.Boolean),
-            new("role", user.Role.ToString()),
-        };
-
+        var claims = new List<Claim>();
+        foreach (var provider in claimsProviders)
+            claims.AddRange(await provider.GetClaimsAsync(userId));
         context.AddRequestedClaims(claims);
     }
 
@@ -36,7 +31,6 @@ internal sealed class ProfileService : IProfileService
     {
         var userId = Guid.Parse(context.Subject.GetSubjectId());
         var creds = await userModule.GetCredentialsByIdAsync(userId);
-
         context.IsActive = creds is not null;
     }
 }
