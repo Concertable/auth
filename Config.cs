@@ -25,6 +25,7 @@ public static class Config
     [
         new IdentityResources.OpenId(),
         new IdentityResources.Profile(),
+        new IdentityResource("roles", new[] { "role" }),
     ];
 
     public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
@@ -88,7 +89,7 @@ public static class Config
         PostLogoutRedirectUris = [settings.PostLogoutRedirectUri],
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
-        AllowedScopes = { "openid", "profile", "concertable.api" },
+        AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,
