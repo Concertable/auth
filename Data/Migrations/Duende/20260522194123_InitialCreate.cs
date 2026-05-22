@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Concertable.Auth.Data.Migrations
+namespace Concertable.Auth.Data.Migrations.Duende
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
