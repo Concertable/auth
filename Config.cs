@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Concertable.Auth.Contracts;
 using Concertable.Auth.Settings;
 using Duende.IdentityServer.Models;
 
@@ -11,13 +12,14 @@ public static class Config
     [
         new ApiScope("concertable.api", "Concertable API"),
         new ApiScope("payment:write", "Payment write access"),
+        new ApiScope("user:claims", "User claims access"),
     ];
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
         new ApiResource("concertable.api", "Concertable API")
         {
-            Scopes = { "concertable.api", "payment:write" }
+            Scopes = { "concertable.api", "payment:write", "user:claims" }
         }
     ];
 
@@ -29,10 +31,13 @@ public static class Config
     ];
 
     public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient("customer-mobile", "concertable-customer://", expoGoRedirectUri);
+        MobileClient(ClientIds.CustomerMobile, "concertable-customer://", expoGoRedirectUri);
 
-    public static Client BusinessMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient("business-mobile", "concertable-business://", expoGoRedirectUri);
+    public static Client VenueMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient(ClientIds.VenueMobile, "concertable-business://", expoGoRedirectUri);
+
+    public static Client ArtistMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient(ClientIds.ArtistMobile, "concertable-business://", expoGoRedirectUri);
 
     private static Client MobileClient(string clientId, string scheme, string? expoGoRedirectUri)
     {
@@ -72,9 +77,9 @@ public static class Config
 
     public static IEnumerable<Client> WebClients(SpaClientSettings spa) =>
     [
-        WebClient("customer-web", spa.Customer),
-        WebClient("venue-web", spa.Venue),
-        WebClient("artist-web", spa.Artist),
+        WebClient(ClientIds.CustomerWeb, spa.Customer),
+        WebClient(ClientIds.VenueWeb, spa.Venue),
+        WebClient(ClientIds.ArtistWeb, spa.Artist),
     ];
 
     private static Client WebClient(string clientId, WebClientSettings settings) => new()
