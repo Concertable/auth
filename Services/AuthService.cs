@@ -1,25 +1,27 @@
 using System.Security.Claims;
+using Concertable.Auth.Data;
+using Concertable.Auth.Data.Entities;
 using Concertable.Shared.Email;
-using Concertable.User.Contracts;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Auth.Services;
 
 internal sealed class AuthService : IAuthService
 {
-    private readonly IUserModule userModule;
+    private readonly AuthDbContext authContext;
     private readonly IPasswordHasher passwordHasher;
     private readonly IIdentityServerInteractionService interaction;
     private readonly IEmailSender emailSender;
 
     public AuthService(
-        IUserModule userModule,
+        AuthDbContext authContext,
         IPasswordHasher passwordHasher,
         IIdentityServerInteractionService interaction,
         IEmailSender emailSender)
     {
-        this.userModule = userModule;
+        this.authContext = authContext;
         this.passwordHasher = passwordHasher;
         this.interaction = interaction;
         this.emailSender = emailSender;
@@ -27,54 +29,39 @@ internal sealed class AuthService : IAuthService
 
     public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default)
     {
-        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
-        if (creds is null || !passwordHasher.Verify(password, creds.PasswordHash))
+        var credential = await authContext.Credentials.FirstOrDefaultAsync(c => c.Email == email, ct);
+        if (credential is null || !passwordHasher.Verify(password, credential.PasswordHash))
             return null;
 
-        if (!creds.IsEmailVerified)
+        if (!credential.IsEmailVerified)
             return null;
 
-        var claims = new List<Claim> { new("sub", creds.Id.ToString()) };
+        var claims = new List<Claim> { new("sub", credential.Id.ToString()) };
         var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
         return new ClaimsPrincipal(identity);
     }
 
-    public async Task<RegisterResult> RegisterCustomerAsync(string email, string password, string verifyUrl, CancellationToken ct = default)
+    public async Task<RegisterResult> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
     {
-        if (await userModule.CustomerEmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
-        await userModule.CreateCustomerAsync(email, passwordHasher.Hash(password), ct);
-        return await SendVerificationAfterRegister(email, verifyUrl, ct);
-    }
+        if (await authContext.Credentials.AnyAsync(c => c.Email == email, ct))
+            return RegisterResult.EmailAlreadyExists;
 
-    public async Task<RegisterResult> RegisterVenueManagerAsync(string email, string password, string verifyUrl, CancellationToken ct = default)
-    {
-        if (await userModule.VenueManagerEmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
-        await userModule.CreateVenueManagerAsync(email, passwordHasher.Hash(password), ct);
-        return await SendVerificationAfterRegister(email, verifyUrl, ct);
-    }
+        var credential = CredentialEntity.Create(email, passwordHasher.Hash(password), clientId);
+        authContext.Credentials.Add(credential);
+        await authContext.SaveChangesAsync(ct);
 
-    public async Task<RegisterResult> RegisterArtistManagerAsync(string email, string password, string verifyUrl, CancellationToken ct = default)
-    {
-        if (await userModule.ArtistManagerEmailExistsAsync(email, ct)) return RegisterResult.EmailAlreadyExists;
-        await userModule.CreateArtistManagerAsync(email, passwordHasher.Hash(password), ct);
-        return await SendVerificationAfterRegister(email, verifyUrl, ct);
-    }
-
-    private async Task<RegisterResult> SendVerificationAfterRegister(string email, string verifyUrl, CancellationToken ct)
-    {
-        var creds = await userModule.GetCredentialsByEmailAsync(email, ct);
-        if (creds is not null)
-            await SendEmailVerificationAsync(creds.Id, verifyUrl, ct);
+        await SendEmailVerificationAsync(credential.Id, verifyUrl, ct);
         return RegisterResult.Success;
     }
 
     public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
     {
-        var creds = await userModule.GetCredentialsByIdAsync(userId, ct);
-        if (creds is null || !passwordHasher.Verify(currentPassword, creds.PasswordHash))
+        var credential = await authContext.Credentials.FindAsync([userId], ct);
+        if (credential is null || !passwordHasher.Verify(currentPassword, credential.PasswordHash))
             return false;
 
-        await userModule.SetPasswordHashAsync(userId, passwordHasher.Hash(newPassword), ct);
+        credential.SetPasswordHash(passwordHasher.Hash(newPassword));
+        await authContext.SaveChangesAsync(ct);
         return true;
     }
 
@@ -86,28 +73,61 @@ internal sealed class AuthService : IAuthService
 
     public async Task SendEmailVerificationAsync(Guid userId, string verifyUrl, CancellationToken ct = default)
     {
-        var token = await userModule.CreateEmailVerificationTokenAsync(userId, ct);
-        if (token is null) return;
+        var credential = await authContext.Credentials.FindAsync([userId], ct);
+        if (credential is null) return;
 
-        var creds = await userModule.GetCredentialsByIdAsync(userId, ct);
-        if (creds is null) return;
+        var token = Guid.NewGuid().ToString("N");
+        var expires = DateTime.UtcNow.AddHours(24);
+        authContext.EmailVerificationTokens.Add(EmailVerificationTokenEntity.Create(userId, token, expires));
+        await authContext.SaveChangesAsync(ct);
 
-        await emailSender.SendVerificationAsync(creds.Email, token, verifyUrl, ct);
+        await emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct);
     }
 
-    public Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default) =>
-        userModule.VerifyEmailWithTokenAsync(token, ct);
+    public async Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default)
+    {
+        var tokenEntity = await authContext.EmailVerificationTokens
+            .FirstOrDefaultAsync(t => t.Token == token, ct);
+
+        if (tokenEntity is null || !tokenEntity.IsActive)
+            return false;
+
+        var credential = await authContext.Credentials.FindAsync([tokenEntity.CredentialId], ct);
+        if (credential is null) return false;
+
+        credential.VerifyEmail();
+        await authContext.SaveChangesAsync(ct);
+        return true;
+    }
 
     public async Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
     {
-        var token = await userModule.CreatePasswordResetTokenAsync(email, ct);
-        if (token is null) return;
+        var credential = await authContext.Credentials.FirstOrDefaultAsync(c => c.Email == email, ct);
+        if (credential is null) return;
+
+        var token = Guid.NewGuid().ToString("N");
+        var expires = DateTime.UtcNow.AddHours(1);
+        authContext.PasswordResetTokens.Add(PasswordResetTokenEntity.Create(credential.Id, token, expires));
+        await authContext.SaveChangesAsync(ct);
 
         var link = $"{resetUrl}?token={Uri.EscapeDataString(token)}";
         await emailSender.SendEmailAsync(email, "Reset your password",
             $"Click here to reset your password: {link}. This link expires in 1 hour.");
     }
 
-    public Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default) =>
-        userModule.ResetPasswordWithTokenAsync(token, passwordHasher.Hash(newPassword), ct);
+    public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
+    {
+        var tokenEntity = await authContext.PasswordResetTokens
+            .FirstOrDefaultAsync(t => t.Token == token, ct);
+
+        if (tokenEntity is null || !tokenEntity.IsActive)
+            return false;
+
+        var credential = await authContext.Credentials.FindAsync([tokenEntity.CredentialId], ct);
+        if (credential is null) return false;
+
+        credential.SetPasswordHash(passwordHasher.Hash(newPassword));
+        await authContext.SaveChangesAsync(ct);
+        return true;
+    }
 }
