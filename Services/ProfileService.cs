@@ -19,13 +19,14 @@ internal sealed class ProfileService : IProfileService
     {
         var userId = Guid.Parse(context.Subject.GetSubjectId());
 
-        var creds = await userModule.GetCredentialsByIdAsync(userId);
-        if (creds is null) return;
+        var user = await userModule.GetByIdAsync(userId);
+        if (user is null) return;
 
         var claims = new List<Claim>
         {
-            new("email", creds.Email),
-            new("email_verified", creds.IsEmailVerified ? "true" : "false", ClaimValueTypes.Boolean),
+            new("email", user.Email),
+            new("email_verified", user.IsEmailVerified ? "true" : "false", ClaimValueTypes.Boolean),
+            new("role", user.Role.ToString()),
         };
 
         context.AddRequestedClaims(claims);
