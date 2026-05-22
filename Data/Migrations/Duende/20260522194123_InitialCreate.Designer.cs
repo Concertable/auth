@@ -9,10 +9,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Concertable.Auth.Data.Migrations
+namespace Concertable.Auth.Data.Migrations.Duende
 {
     [DbContext(typeof(PersistedGrantDbContext))]
-    [Migration("20260520130156_InitialCreate")]
+    [Migration("20260522194123_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
