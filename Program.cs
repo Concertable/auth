@@ -1,21 +1,27 @@
 using Concertable.Application.Interfaces.Geometry;
 using Concertable.Auth;
-using Microsoft.AspNetCore.HttpOverrides;
+using Concertable.Auth.Contracts;
+using Concertable.Auth.Contracts.Events;
+using Concertable.Auth.Data;
+using Concertable.Auth.Data.Events;
+using Concertable.Auth.Data.Seeders;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
 using Concertable.DataAccess.Infrastructure;
-using Concertable.DataAccess.Infrastructure.Extensions;
+using Concertable.Messaging.Application;
+using Concertable.Messaging.AzureServiceBus;
 using Concertable.Messaging.Infrastructure.Extensions;
+using Concertable.Shared;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
-using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Extensions;
 using Concertable.Shared.Infrastructure.Services.Geometry;
-using Concertable.User.Infrastructure.Extensions;
+using Concertable.Shared.Pdf.Infrastructure.Extensions;
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.Models;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 
@@ -51,25 +57,58 @@ builder.Services.AddSharedPdf();
 builder.Services.AddCurrentUser();
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<DomainEventDispatchInterceptor>();
-builder.Services.AddUserModule(builder.Configuration);
+
+var authConnectionString = builder.Configuration.GetConnectionString("AuthDb");
+builder.Services.AddSingleton<AuthConfigurationProvider>();
+builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
+    opt.UseSqlServer(authConnectionString)
+        .AddInterceptors(
+            sp.GetRequiredService<AuditInterceptor>(),
+            sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+
+builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
+builder.Services.AddScoped<IProfileClaimsProvider, AuthLocalClaimsProvider>();
+builder.Services.AddScoped<IProfileClaimsProvider, B2BProfileClaimsProvider>();
+builder.Services.AddMemoryCache();
+builder.Services.AddClientCredentials(opts =>
+{
+    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services__auth__https__0"] ?? "";
+    opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"] ?? "";
+    opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? "";
+});
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-var connectionString = builder.Configuration.GetConnectionString("B2BDb");
-builder.Services.AddOutbox(opt => opt.UseSqlServer(connectionString), runDispatcher: false);
+builder.Services.AddOutbox(opt => opt.UseSqlServer(authConnectionString), runDispatcher: true);
+builder.Services.AddInProcessEventDispatch();
+builder.Services.AddAzureServiceBusTransport(
+    opts =>
+    {
+        opts.ConnectionString = builder.Configuration.GetConnectionString("asb") ?? "";
+        opts.ServiceName = "concertable-auth";
+    },
+    reg =>
+    {
+        reg.Publishes<CredentialRegisteredEvent>();
+    });
+
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
 var clients = new List<Client>(Config.WebClients(spaClient))
 {
     Config.CustomerMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Customer"]),
-    Config.BusinessMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
+    Config.VenueMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
+    Config.ArtistMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
     Config.ServiceClient("concertable-b2b",
         builder.Configuration["ServiceAuth:B2BClientSecret"]!,
         "payment:write"),
     Config.ServiceClient("concertable-customer",
         builder.Configuration["ServiceAuth:CustomerClientSecret"]!,
         "payment:write"),
+    Config.ServiceClient("concertable-auth",
+        builder.Configuration["ServiceAuth:AuthClientSecret"]!,
+        "user:claims"),
 };
 if (builder.Environment.IsEnvironment("E2E"))
     clients.Add(Config.TestClient);
@@ -88,7 +127,8 @@ var isBuilder = builder.Services.AddIdentityServer(options =>
     .AddProfileService<ProfileService>()
     .AddOperationalStore(options =>
     {
-        options.ConfigureDbContext = b => b.UseSqlServer(connectionString,
+        options.ConfigureDbContext = b => b.UseSqlServer(
+            builder.Configuration.GetConnectionString("B2BDb"),
             sql => sql.MigrationsAssembly(migrationsAssembly));
         options.DefaultSchema = "idsrv";
     })
@@ -103,6 +143,15 @@ using (var scope = app.Services.CreateScope())
 {
     var grants = scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
     await grants.Database.MigrateAsync();
+
+    var authContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    await authContext.Database.MigrateAsync();
+
+    if (!app.Environment.IsProduction())
+    {
+        var seeder = new AuthDevSeeder(authContext);
+        await seeder.SeedAsync(BCrypt.Net.BCrypt.HashPassword("Password11!"));
+    }
 }
 
 app.MapDefaultEndpoints();
