@@ -148,6 +148,9 @@ using (var scope = app.Services.CreateScope())
     var authContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
     await authContext.Database.MigrateAsync();
 
+    var outbox = scope.ServiceProvider.GetRequiredService<Concertable.Messaging.Infrastructure.Outbox.OutboxDbContext>();
+    await outbox.Database.MigrateAsync();
+
     if (!app.Environment.IsProduction())
     {
         var seeder = new AuthDevSeeder(authContext);
