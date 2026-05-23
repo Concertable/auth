@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
-using Concertable.Shared.Email;
+using Concertable.Shared.Email.Application;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
 using Microsoft.EntityFrameworkCore;
