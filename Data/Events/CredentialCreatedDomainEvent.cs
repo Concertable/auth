@@ -1,5 +1,5 @@
 using Concertable.Auth.Data.Entities;
-using Concertable.Shared;
+using Concertable.Kernel;
 
 namespace Concertable.Auth.Data.Events;
 

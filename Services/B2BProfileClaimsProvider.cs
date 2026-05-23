@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 using Concertable.Auth.Contracts;
-using Concertable.Shared.Infrastructure.Services;
+using Concertable.Kernel.Auth;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Concertable.Auth.Services;
