@@ -1,6 +1,6 @@
 using Concertable.Auth.Contracts.Events;
-using Concertable.Messaging;
-using Concertable.Shared;
+using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
 
 namespace Concertable.Auth.Data.Events;
 
