@@ -1,4 +1,6 @@
+using Concertable.Auth.Contracts;
 using Concertable.Auth.Data.Entities;
+using Concertable.Auth.Data.Factories;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Auth.Data.Seeders;
@@ -29,15 +31,16 @@ internal sealed class AuthDevSeeder
             return;
 
         context.Credentials.Add(CredentialEntity.Seed(SeedIds.Admin, "admin@test.com", passwordHash));
-        context.Credentials.Add(CredentialEntity.Seed(SeedIds.Customer1, "customer1@test.com", passwordHash));
-        context.Credentials.Add(CredentialEntity.Seed(SeedIds.Customer2, "customer2@test.com", passwordHash));
-        context.Credentials.Add(CredentialEntity.Seed(SeedIds.Customer3, "customer3@test.com", passwordHash));
+
+        context.Credentials.Add(CredentialFactory.Create(SeedIds.Customer1, "customer1@test.com", passwordHash, ClientIds.CustomerWeb));
+        context.Credentials.Add(CredentialFactory.Create(SeedIds.Customer2, "customer2@test.com", passwordHash, ClientIds.CustomerWeb));
+        context.Credentials.Add(CredentialFactory.Create(SeedIds.Customer3, "customer3@test.com", passwordHash, ClientIds.CustomerWeb));
 
         for (int i = 1; i <= 35; i++)
-            context.Credentials.Add(CredentialEntity.Seed(SeedIds.ArtistManager(i), $"artistmanager{i}@test.com", passwordHash));
+            context.Credentials.Add(CredentialFactory.Create(SeedIds.ArtistManager(i), $"artistmanager{i}@test.com", passwordHash, ClientIds.ArtistWeb));
 
         for (int i = 1; i <= 35; i++)
-            context.Credentials.Add(CredentialEntity.Seed(SeedIds.VenueManager(i), $"venuemanager{i}@test.com", passwordHash));
+            context.Credentials.Add(CredentialFactory.Create(SeedIds.VenueManager(i), $"venuemanager{i}@test.com", passwordHash, ClientIds.VenueWeb));
 
         await context.SaveChangesAsync(ct);
     }
