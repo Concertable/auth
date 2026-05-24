@@ -6,6 +6,7 @@ using Concertable.Auth.Data.Events;
 using Concertable.Auth.Data.Seeders;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
+using Concertable.Seeding.Extensions;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel;
 using Concertable.Kernel.Extensions;
@@ -60,12 +61,14 @@ builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<DomainEventDispatchInterceptor>();
 
 var authConnectionString = builder.Configuration.GetConnectionString("AuthDb");
+builder.Services.AddSeedingInfrastructure();
 builder.Services.AddSingleton<AuthConfigurationProvider>();
 builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
     opt.UseSqlServer(authConnectionString)
         .AddInterceptors(
             sp.GetRequiredService<AuditInterceptor>(),
-            sp.GetRequiredService<DomainEventDispatchInterceptor>()));
+            sp.GetRequiredService<DomainEventDispatchInterceptor>())
+        .UseSeedingSupport(sp));
 
 builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
 builder.Services.AddScoped<IProfileClaimsProvider, AuthLocalClaimsProvider>();
