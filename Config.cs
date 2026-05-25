@@ -10,17 +10,31 @@ public static class Config
 {
     public static IEnumerable<ApiScope> ApiScopes =>
     [
-        new ApiScope("concertable.api", "Concertable API"),
-        new ApiScope("payment:write", "Payment write access"),
-        new ApiScope("user:claims", "User claims access"),
+        new ApiScope("concertable.b2b.api",      "Concertable B2B API"),
+        new ApiScope("concertable.customer.api",  "Concertable Customer API"),
+        new ApiScope("concertable.search.api",    "Concertable Search API"),
+        new ApiScope("payment:write",             "Payment write access"),
+        new ApiScope("user:claims",               "User claims access"),
     ];
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
-        new ApiResource("concertable.api", "Concertable API")
+        new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
-            Scopes = { "concertable.api", "payment:write", "user:claims" }
-        }
+            Scopes = { "concertable.b2b.api", "user:claims" }
+        },
+        new ApiResource("concertable.customer.api", "Concertable Customer API")
+        {
+            Scopes = { "concertable.customer.api" }
+        },
+        new ApiResource("concertable.search.api", "Concertable Search API")
+        {
+            Scopes = { "concertable.search.api" }
+        },
+        new ApiResource("concertable.payment.api", "Concertable Payment API")
+        {
+            Scopes = { "payment:write" }
+        },
     ];
 
     public static IEnumerable<IdentityResource> IdentityResources =>
@@ -56,7 +70,9 @@ public static class Config
             RedirectUris = redirectUris,
             PostLogoutRedirectUris = { scheme },
 
-            AllowedScopes = { "openid", "profile", "concertable.api" },
+            AllowedScopes = clientId == ClientIds.CustomerMobile
+                ? new HashSet<string> { "openid", "profile", "concertable.customer.api" }
+                : new HashSet<string> { "openid", "profile", "concertable.b2b.api" },
 
             AllowOfflineAccess = true,
             AccessTokenLifetime = 900,
@@ -72,7 +88,7 @@ public static class Config
         ClientId = "concertable-test",
         AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
         RequireClientSecret = false,
-        AllowedScopes = { "openid", "concertable.api" },
+        AllowedScopes = { "openid", "concertable.b2b.api", "concertable.customer.api", "concertable.search.api" },
     };
 
     public static IEnumerable<Client> WebClients(SpaClientSettings spa) =>
@@ -94,7 +110,9 @@ public static class Config
         PostLogoutRedirectUris = [settings.PostLogoutRedirectUri],
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
-        AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+        AllowedScopes = clientId == ClientIds.CustomerWeb
+            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api" }
+            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,
