@@ -29,15 +29,6 @@ internal sealed class CredentialEntity : IGuidEntity, IEventRaiser
         return entity;
     }
 
-    public static CredentialEntity Seed(Guid id, string email, string passwordHash) =>
-        new()
-        {
-            Id = id,
-            Email = email,
-            PasswordHash = passwordHash,
-            IsEmailVerified = true
-        };
-
     public void VerifyEmail() => IsEmailVerified = true;
 
     public void SetPasswordHash(string hash) => PasswordHash = hash;
