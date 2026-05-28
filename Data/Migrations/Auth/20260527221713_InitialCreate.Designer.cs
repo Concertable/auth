@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Concertable.Auth.Data.Migrations.Auth
 {
     [DbContext(typeof(AuthDbContext))]
-    [Migration("20260525215618_InitialCreate")]
+    [Migration("20260527221713_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -153,6 +153,9 @@ namespace Concertable.Auth.Data.Migrations.Auth
                     b.Property<string>("MessageType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("NextRetryAtUtc")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<DateTimeOffset>("OccurredAtUtc")
                         .HasColumnType("datetimeoffset");
