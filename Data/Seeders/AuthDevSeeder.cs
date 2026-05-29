@@ -1,46 +1,63 @@
 using Concertable.Auth.Contracts;
+using Concertable.Auth.Data.Entities;
 using Concertable.Auth.Data.Factories;
+using Concertable.Auth.Services;
+using Concertable.Seeding;
+using Concertable.Seeding.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Concertable.Auth.Data.Seeders;
 
-internal static class SeedIds
+internal sealed class AuthDevSeeder : IDevSeeder
 {
-    public static readonly Guid Admin = new("a0000000-0000-0000-0000-000000000001");
-    public static readonly Guid Customer1 = new("c0000000-0000-0000-0000-000000000001");
-    public static readonly Guid Customer2 = new("c0000000-0000-0000-0000-000000000002");
-    public static readonly Guid Customer3 = new("c0000000-0000-0000-0000-000000000003");
+    public int Order => 0;
 
-    public static Guid ArtistManager(int n) => new($"a1000000-0000-0000-0000-{n:D12}");
-    public static Guid VenueManager(int n) => new($"b1000000-0000-0000-0000-{n:D12}");
-}
+    private const string DefaultPassword = "Password11!";
 
-internal sealed class AuthDevSeeder
-{
     private readonly AuthDbContext context;
+    private readonly IPasswordHasher passwordHasher;
+    private readonly ILogger<AuthDevSeeder> logger;
 
-    public AuthDevSeeder(AuthDbContext context)
+    public AuthDevSeeder(AuthDbContext context, IPasswordHasher passwordHasher, ILogger<AuthDevSeeder> logger)
     {
         this.context = context;
+        this.passwordHasher = passwordHasher;
+        this.logger = logger;
     }
 
-    public async Task SeedAsync(string passwordHash, CancellationToken ct = default)
+    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+
+    public async Task SeedAsync(CancellationToken ct = default)
     {
-        if (await context.Credentials.AnyAsync(ct))
+        var existing = await context.Credentials.CountAsync(ct);
+        if (existing > 0)
+        {
+            logger.SeedSkipped();
             return;
+        }
 
-        context.Credentials.Add(CredentialFactory.Seed(SeedIds.Admin, "admin@test.com", passwordHash, string.Empty));
+        var passwordHash = passwordHasher.Hash(DefaultPassword);
 
-        context.Credentials.Add(CredentialFactory.Seed(SeedIds.Customer1, "customer1@test.com", passwordHash, ClientIds.CustomerWeb));
-        context.Credentials.Add(CredentialFactory.Seed(SeedIds.Customer2, "customer2@test.com", passwordHash, ClientIds.CustomerWeb));
-        context.Credentials.Add(CredentialFactory.Seed(SeedIds.Customer3, "customer3@test.com", passwordHash, ClientIds.CustomerWeb));
+        var toAdd = new List<CredentialEntity>
+        {
+            CredentialFactory.Create(SeedUsers.Admin, SeedUsers.AdminEmail, passwordHash, ClientIds.Admin)
+        };
 
-        for (int i = 1; i <= 35; i++)
-            context.Credentials.Add(CredentialFactory.Seed(SeedIds.ArtistManager(i), $"artistmanager{i}@test.com", passwordHash, ClientIds.ArtistWeb));
+        foreach (var customer in SeedCustomers.All)
+            toAdd.Add(CredentialFactory.Create(customer.Id, customer.Email, passwordHash, ClientIds.CustomerWeb));
 
-        for (int i = 1; i <= 35; i++)
-            context.Credentials.Add(CredentialFactory.Seed(SeedIds.VenueManager(i), $"venuemanager{i}@test.com", passwordHash, ClientIds.VenueWeb));
+        for (int i = 1; i <= SeedUsers.ManagerCount; i++)
+            toAdd.Add(CredentialFactory.Create(
+                SeedUsers.ArtistManagerId(i), SeedUsers.ArtistManagerEmail(i), passwordHash, ClientIds.ArtistWeb));
 
+        for (int i = 1; i <= SeedUsers.ManagerCount; i++)
+            toAdd.Add(CredentialFactory.Create(
+                SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i), passwordHash, ClientIds.VenueWeb));
+
+        logger.SeedingCredentials(existing, toAdd.Count);
+        context.Credentials.AddRange(toAdd);
         await context.SaveChangesAsync(ct);
+        logger.SeededCredentials(toAdd.Count);
     }
 }

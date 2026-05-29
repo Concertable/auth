@@ -19,6 +19,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" />
     <ProjectReference Include="..\Seeding\Concertable.Seeding.Shared\Concertable.Seeding.Shared.csproj" />
+    <ProjectReference Include="..\Seeding\Concertable.Seeding.Identity\Concertable.Seeding.Identity.csproj" />
+    <ProjectReference Include="..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
     <ProjectReference Include="..\Concertable.DataAccess\Concertable.DataAccess.Infrastructure\Concertable.DataAccess.Infrastructure.csproj" />
     <ProjectReference Include="..\Concertable.Messaging\Concertable.Messaging.AzureServiceBus\Concertable.Messaging.AzureServiceBus.csproj" />
     <ProjectReference Include="..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />
