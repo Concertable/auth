@@ -21,11 +21,13 @@ public static class Config
     [
         new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
-            Scopes = { "concertable.b2b.api", "user:claims" }
+            Scopes = { "concertable.b2b.api", "user:claims" },
+            UserClaims = { "role" }
         },
         new ApiResource("concertable.customer.api", "Concertable Customer API")
         {
-            Scopes = { "concertable.customer.api" }
+            Scopes = { "concertable.customer.api", "user:claims" },
+            UserClaims = { "role" }
         },
         new ApiResource("concertable.search.api", "Concertable Search API")
         {
