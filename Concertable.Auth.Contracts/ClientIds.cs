@@ -2,6 +2,7 @@ namespace Concertable.Auth.Contracts;
 
 public static class ClientIds
 {
+    public const string Admin = "admin";
     public const string CustomerWeb = "customer-web";
     public const string CustomerMobile = "customer-mobile";
     public const string VenueWeb = "venue-web";
