@@ -12,12 +12,4 @@ internal static class CredentialFactory
         credential.VerifyEmail();
         return credential;
     }
-
-    public static CredentialEntity Seed(Guid id, string email, string passwordHash, string clientId)
-    {
-        var credential = CredentialEntity.Create(email, passwordHash, clientId)
-            .With(nameof(CredentialEntity.Id), id);
-        credential.VerifyEmail();
-        return credential;
-    }
 }

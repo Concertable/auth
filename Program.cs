@@ -6,7 +6,9 @@ using Concertable.Auth.Data.Events;
 using Concertable.Auth.Data.Seeders;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
+using Concertable.Seeding;
 using Concertable.Seeding.Extensions;
+using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel;
 using Concertable.Kernel.Extensions;
@@ -58,7 +60,7 @@ builder.Services.AddSharedImaging();
 builder.Services.AddSharedPdf();
 builder.Services.AddCurrentUser();
 builder.Services.AddScoped<AuditInterceptor>();
-builder.Services.AddScoped<DomainEventDispatchInterceptor>();
+builder.Services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
 var authConnectionString = builder.Configuration.GetConnectionString("AuthDb");
 builder.Services.AddSeedingInfrastructure();
@@ -67,12 +69,13 @@ builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
     opt.UseSqlServer(authConnectionString)
         .AddInterceptors(
             sp.GetRequiredService<AuditInterceptor>(),
-            sp.GetRequiredService<DomainEventDispatchInterceptor>())
+            sp.GetRequiredService<IDomainEventDispatchInterceptor>())
         .UseSeedingSupport(sp));
 
 builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
 builder.Services.AddScoped<IProfileClaimsProvider, AuthLocalClaimsProvider>();
 builder.Services.AddScoped<IProfileClaimsProvider, B2BProfileClaimsProvider>();
+builder.Services.AddScoped<IProfileClaimsProvider, CustomerProfileClaimsProvider>();
 builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>
 {
@@ -83,6 +86,10 @@ builder.Services.AddClientCredentials(opts =>
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<IDbInitializer, AuthDbInitializer>();
+if (!builder.Environment.IsProduction())
+    builder.Services.AddScoped<IDevSeeder, AuthDevSeeder>();
 
 builder.Services.AddOutbox(opt => opt.UseSqlServer(authConnectionString), runDispatcher: true);
 builder.Services.AddInProcessEventDispatch();
@@ -145,20 +152,8 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var grants = scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
-    await grants.Database.MigrateAsync();
-
-    var authContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    await authContext.Database.MigrateAsync();
-
-    var outbox = scope.ServiceProvider.GetRequiredService<Concertable.Messaging.Infrastructure.Outbox.OutboxDbContext>();
-    await outbox.Database.MigrateAsync();
-
-    if (!app.Environment.IsProduction())
-    {
-        var seeder = new AuthDevSeeder(authContext);
-        await seeder.SeedAsync(BCrypt.Net.BCrypt.HashPassword("Password11!"));
-    }
+    var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    await initializer.InitializeAsync();
 }
 
 app.MapDefaultEndpoints();
