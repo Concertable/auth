@@ -1,7 +1,7 @@
 using Concertable.DataAccess.Application;
 using Concertable.Auth.Data;
 using Concertable.Messaging.Infrastructure.Outbox;
-using Concertable.Seed;
+using Concertable.Seed.Shared;
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
