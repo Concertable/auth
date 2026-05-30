@@ -1,5 +1,5 @@
 using Concertable.Auth.Data.Entities;
-using static Concertable.Seed.Extensions.EntityReflectionExtensions;
+using static Concertable.Seed.Identity.Extensions.EntityReflectionExtensions;
 
 namespace Concertable.Auth.Data.Factories;
 
