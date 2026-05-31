@@ -44,8 +44,9 @@ internal sealed class AuthDevSeeder : IDevSeeder
             CredentialFactory.Create(SeedUsers.Admin, SeedUsers.AdminEmail, passwordHash, ClientIds.Admin)
         };
 
-        foreach (var customer in SeedCustomers.All)
-            toAdd.Add(CredentialFactory.Create(customer.Id, customer.Email, passwordHash, ClientIds.CustomerWeb));
+        for (int i = 1; i <= SeedCustomers.CustomerCount; i++)
+            toAdd.Add(CredentialFactory.Create(
+                SeedCustomers.CustomerId(i), SeedCustomers.CustomerEmail(i), passwordHash, ClientIds.CustomerWeb));
 
         for (int i = 1; i <= SeedUsers.ManagerCount; i++)
             toAdd.Add(CredentialFactory.Create(
