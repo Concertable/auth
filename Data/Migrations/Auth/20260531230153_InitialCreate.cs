@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Concertable.Auth.Data.Migrations.Auth
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public sealed partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

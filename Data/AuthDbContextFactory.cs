@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Concertable.Auth.Data;
 
-internal class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbContext>
+internal sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbContext>
 {
     public AuthDbContext CreateDbContext(string[] args)
     {
