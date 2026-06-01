@@ -8,7 +8,7 @@ internal sealed class CredentialEntityConfiguration : IEntityTypeConfiguration<C
 {
     public void Configure(EntityTypeBuilder<CredentialEntity> builder)
     {
-        builder.ToTable("Credentials", "auth");
+        builder.ToTable(Schema.Tables.Credentials, Schema.Name);
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
         builder.Property(c => c.Email).IsRequired().HasMaxLength(256);
