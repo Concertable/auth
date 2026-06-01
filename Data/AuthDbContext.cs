@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Auth.Data;
 
-internal class AuthDbContext(
+internal sealed class AuthDbContext(
     DbContextOptions<AuthDbContext> options,
     AuthConfigurationProvider provider)
     : DbContextBase(options)
