@@ -8,7 +8,7 @@ internal sealed class PasswordResetTokenEntityConfiguration : IEntityTypeConfigu
 {
     public void Configure(EntityTypeBuilder<PasswordResetTokenEntity> builder)
     {
-        builder.ToTable("PasswordResetTokens", "auth");
+        builder.ToTable(Schema.Tables.PasswordResetTokens, Schema.Name);
         builder.HasIndex(t => t.CredentialId);
         builder.HasIndex(t => t.Token).IsUnique();
     }
