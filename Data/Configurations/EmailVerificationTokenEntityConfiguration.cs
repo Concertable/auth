@@ -8,7 +8,7 @@ internal sealed class EmailVerificationTokenEntityConfiguration : IEntityTypeCon
 {
     public void Configure(EntityTypeBuilder<EmailVerificationTokenEntity> builder)
     {
-        builder.ToTable("EmailVerificationTokens", "auth");
+        builder.ToTable(Schema.Tables.EmailVerificationTokens, Schema.Name);
         builder.HasIndex(t => t.CredentialId);
         builder.HasIndex(t => t.Token).IsUnique();
     }
