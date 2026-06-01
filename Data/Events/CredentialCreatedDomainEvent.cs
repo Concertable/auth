@@ -3,4 +3,4 @@ using Concertable.Kernel;
 
 namespace Concertable.Auth.Data.Events;
 
-internal record CredentialCreatedDomainEvent(CredentialEntity Credential, string ClientId) : IDomainEvent;
+internal sealed record CredentialCreatedDomainEvent(CredentialEntity Credential, string ClientId) : IDomainEvent;
