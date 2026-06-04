@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
 using Concertable.Shared.Email.Application;
@@ -76,7 +77,7 @@ internal sealed class AuthService : IAuthService
         var credential = await authContext.Credentials.FindAsync([userId], ct);
         if (credential is null) return;
 
-        var token = Guid.NewGuid().ToString("N");
+        var token = GenerateToken();
         var expires = DateTime.UtcNow.AddHours(24);
         authContext.EmailVerificationTokens.Add(EmailVerificationTokenEntity.Create(userId, token, expires));
         await authContext.SaveChangesAsync(ct);
@@ -96,6 +97,7 @@ internal sealed class AuthService : IAuthService
         if (credential is null) return false;
 
         credential.VerifyEmail();
+        authContext.EmailVerificationTokens.Remove(tokenEntity);
         await authContext.SaveChangesAsync(ct);
         return true;
     }
@@ -105,7 +107,7 @@ internal sealed class AuthService : IAuthService
         var credential = await authContext.Credentials.FirstOrDefaultAsync(c => c.Email == email, ct);
         if (credential is null) return;
 
-        var token = Guid.NewGuid().ToString("N");
+        var token = GenerateToken();
         var expires = DateTime.UtcNow.AddHours(1);
         authContext.PasswordResetTokens.Add(PasswordResetTokenEntity.Create(credential.Id, token, expires));
         await authContext.SaveChangesAsync(ct);
@@ -127,7 +129,12 @@ internal sealed class AuthService : IAuthService
         if (credential is null) return false;
 
         credential.SetPasswordHash(passwordHasher.Hash(newPassword));
+        authContext.PasswordResetTokens.Remove(tokenEntity);
         await authContext.SaveChangesAsync(ct);
         return true;
     }
+
+    private static string GenerateToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 }
