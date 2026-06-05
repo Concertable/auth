@@ -4,6 +4,8 @@ namespace Concertable.Auth;
 
 internal static partial class Log
 {
+    #region AuthDevSeeder
+
     [LoggerMessage(Level = LogLevel.Information, Message = "AuthDevSeeder: existing credential count {ExistingCount}; about to seed {NewCount} new")]
     internal static partial void SeedingCredentials(this ILogger logger, int existingCount, int newCount);
 
@@ -12,6 +14,10 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "AuthDevSeeder: skipped (credentials already exist)")]
     internal static partial void SeedSkipped(this ILogger logger);
+
+    #endregion
+
+    #region B2BProfileClaimsProvider
 
     [LoggerMessage(Level = LogLevel.Information, Message = "B2BProfileClaimsProvider: requesting subjectId={SubjectId} url={Url}")]
     internal static partial void B2BClaimsRequested(this ILogger logger, Guid subjectId, string url);
@@ -25,6 +31,10 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "B2BProfileClaimsProvider: failed subjectId={SubjectId}")]
     internal static partial void B2BClaimsFailed(this ILogger logger, Exception ex, Guid subjectId);
 
+    #endregion
+
+    #region CustomerProfileClaimsProvider
+
     [LoggerMessage(Level = LogLevel.Information, Message = "CustomerProfileClaimsProvider: requesting subjectId={SubjectId} url={Url}")]
     internal static partial void CustomerClaimsRequested(this ILogger logger, Guid subjectId, string url);
 
@@ -36,4 +46,6 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Error, Message = "CustomerProfileClaimsProvider: failed subjectId={SubjectId}")]
     internal static partial void CustomerClaimsFailed(this ILogger logger, Exception ex, Guid subjectId);
+
+    #endregion
 }
