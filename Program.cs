@@ -59,6 +59,7 @@ builder.Services.AddSharedGeocoding();
 builder.Services.AddSharedImaging();
 builder.Services.AddSharedPdf();
 builder.Services.AddCurrentUser();
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
