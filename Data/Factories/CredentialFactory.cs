@@ -8,7 +8,7 @@ internal static class CredentialFactory
     public static CredentialEntity Create(Guid id, string email, string passwordHash, string clientId)
     {
         var credential = CredentialEntity.Create(email, passwordHash, clientId)
-            .With(nameof(CredentialEntity.Id), id);
+            .WithId(id);
         credential.VerifyEmail();
         return credential;
     }
