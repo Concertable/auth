@@ -1,5 +1,5 @@
 using Concertable.Auth.Services;
-using Concertable.User.Contracts;
+using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -8,43 +8,34 @@ namespace Concertable.Auth.Pages.Account;
 public sealed class RegisterModel : PageModel
 {
     private readonly IAuthService authService;
-    private readonly IClientRoleResolver clientRoleResolver;
+    private readonly IIdentityServerInteractionService interaction;
 
-    public RegisterModel(IAuthService authService, IClientRoleResolver clientRoleResolver)
+    public RegisterModel(IAuthService authService, IIdentityServerInteractionService interaction)
     {
         this.authService = authService;
-        this.clientRoleResolver = clientRoleResolver;
+        this.interaction = interaction;
     }
 
     [BindProperty] public string Email { get; set; } = null!;
     [BindProperty] public string Password { get; set; } = null!;
-    [BindProperty] public string? SelectedRole { get; set; }
     [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
 
     public bool Submitted { get; private set; }
     public string? ErrorMessage { get; private set; }
-    public IReadOnlyList<Role> AvailableRoles { get; private set; } = [];
-
-    public async Task OnGetAsync() =>
-        AvailableRoles = await clientRoleResolver.GetAllowedRolesAsync(ReturnUrl);
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
-        AvailableRoles = await clientRoleResolver.GetAllowedRolesAsync(ReturnUrl);
-        var resolution = await clientRoleResolver.ResolveRoleAsync(ReturnUrl, SelectedRole);
+        var context = await interaction.GetAuthorizationContextAsync(ReturnUrl);
+        var clientId = context?.Client?.ClientId;
 
-        ErrorMessage = resolution switch
+        if (clientId is null)
         {
-            RoleResolution.UnknownClient  => "Sign up must be initiated from a Concertable surface.",
-            RoleResolution.InvalidSelection => "Please select a valid role.",
-            _ => null
-        };
+            ErrorMessage = "Sign up must be initiated from a Concertable surface.";
+            return Page();
+        }
 
-        if (ErrorMessage is not null) return Page();
-
-        var role = ((RoleResolution.Resolved)resolution).Role;
         var verifyUrl = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail";
-        var result = await authService.RegisterAsync(Email, Password, role, verifyUrl, ct);
+        var result = await authService.RegisterAsync(Email, Password, clientId, verifyUrl, ct);
 
         switch (result)
         {
@@ -53,12 +44,6 @@ public sealed class RegisterModel : PageModel
                 break;
             case RegisterResult.EmailAlreadyExists:
                 ErrorMessage = "An account with that email already exists.";
-                break;
-            case RegisterResult.RoleNotAllowed:
-                ErrorMessage = "Cannot self-assign this role.";
-                break;
-            case RegisterResult.InvalidRole:
-                ErrorMessage = "Invalid role.";
                 break;
         }
 
