@@ -1,5 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
+using Concertable.Auth.Contracts;
 using Concertable.Auth.Settings;
-using Concertable.User.Contracts;
 using Duende.IdentityServer.Models;
 
 namespace Concertable.Auth;
@@ -8,30 +10,50 @@ public static class Config
 {
     public static IEnumerable<ApiScope> ApiScopes =>
     [
-        new ApiScope("concertable.api", "Concertable API")
+        new ApiScope("concertable.b2b.api",      "Concertable B2B API"),
+        new ApiScope("concertable.customer.api",  "Concertable Customer API"),
+        new ApiScope("concertable.search.api",    "Concertable Search API"),
+        new ApiScope("payment:write",             "Payment write access"),
+        new ApiScope("user:claims",               "User claims access"),
     ];
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
-        new ApiResource("concertable.api", "Concertable API")
+        new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
-            Scopes = { "concertable.api" },
+            Scopes = { "concertable.b2b.api", "user:claims" },
             UserClaims = { "role" }
-        }
+        },
+        new ApiResource("concertable.customer.api", "Concertable Customer API")
+        {
+            Scopes = { "concertable.customer.api", "user:claims" },
+            UserClaims = { "role" }
+        },
+        new ApiResource("concertable.search.api", "Concertable Search API")
+        {
+            Scopes = { "concertable.search.api" }
+        },
+        new ApiResource("concertable.payment.api", "Concertable Payment API")
+        {
+            Scopes = { "payment:write" }
+        },
     ];
 
     public static IEnumerable<IdentityResource> IdentityResources =>
     [
         new IdentityResources.OpenId(),
         new IdentityResources.Profile(),
-        new IdentityResource("roles", "User roles", ["role"])
+        new IdentityResource("roles", new[] { "role" }),
     ];
 
     public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient("customer-mobile", "concertable-customer://", expoGoRedirectUri);
+        MobileClient(ClientIds.CustomerMobile, "concertable-customer://", expoGoRedirectUri);
 
-    public static Client BusinessMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient("business-mobile", "concertable-business://", expoGoRedirectUri);
+    public static Client VenueMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient(ClientIds.VenueMobile, "concertable-business://", expoGoRedirectUri);
+
+    public static Client ArtistMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient(ClientIds.ArtistMobile, "concertable-business://", expoGoRedirectUri);
 
     private static Client MobileClient(string clientId, string scheme, string? expoGoRedirectUri)
     {
@@ -50,7 +72,9 @@ public static class Config
             RedirectUris = redirectUris,
             PostLogoutRedirectUris = { scheme },
 
-            AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+            AllowedScopes = clientId == ClientIds.CustomerMobile
+                ? new HashSet<string> { "openid", "profile", "concertable.customer.api" }
+                : new HashSet<string> { "openid", "profile", "concertable.b2b.api" },
 
             AllowOfflineAccess = true,
             AccessTokenLifetime = 900,
@@ -66,14 +90,14 @@ public static class Config
         ClientId = "concertable-test",
         AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
         RequireClientSecret = false,
-        AllowedScopes = { "openid", "concertable.api" },
+        AllowedScopes = { "openid", "concertable.b2b.api", "concertable.customer.api", "concertable.search.api" },
     };
 
     public static IEnumerable<Client> WebClients(SpaClientSettings spa) =>
     [
-        WebClient("customer-web", spa.Customer),
-        WebClient("venue-web", spa.Venue),
-        WebClient("artist-web", spa.Artist),
+        WebClient(ClientIds.CustomerWeb, spa.Customer),
+        WebClient(ClientIds.VenueWeb, spa.Venue),
+        WebClient(ClientIds.ArtistWeb, spa.Artist),
     ];
 
     private static Client WebClient(string clientId, WebClientSettings settings) => new()
@@ -88,7 +112,9 @@ public static class Config
         PostLogoutRedirectUris = [settings.PostLogoutRedirectUri],
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
-        AllowedScopes = { "openid", "profile", "roles", "concertable.api" },
+        AllowedScopes = clientId == ClientIds.CustomerWeb
+            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api" }
+            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,
@@ -97,4 +123,18 @@ public static class Config
         RefreshTokenExpiration = TokenExpiration.Sliding,
         SlidingRefreshTokenLifetime = 60 * 60 * 24 * 30
     };
+
+    public static Client ServiceClient(string clientId, string clientSecret, params string[] allowedScopes) => new()
+    {
+        ClientId = clientId,
+        ClientSecrets = { new Secret(Sha256(clientSecret)) },
+        AllowedGrantTypes = GrantTypes.ClientCredentials,
+        AllowedScopes = allowedScopes.ToList()
+    };
+
+    private static string Sha256(string value)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+        return Convert.ToBase64String(hash);
+    }
 }
