@@ -80,7 +80,7 @@ builder.Services.AddScoped<IProfileClaimsProvider, CustomerProfileClaimsProvider
 builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>
 {
-    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services__auth__https__0"] ?? "";
+    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"] ?? "";
     opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"] ?? "";
     opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? "";
 });

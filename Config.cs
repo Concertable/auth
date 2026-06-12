@@ -35,7 +35,8 @@ public static class Config
         },
         new ApiResource("concertable.payment.api", "Concertable Payment API")
         {
-            Scopes = { "payment:write" }
+            Scopes = { "payment:write" },
+            UserClaims = { "owner" }
         },
     ];
 
@@ -113,8 +114,8 @@ public static class Config
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
         AllowedScopes = clientId == ClientIds.CustomerWeb
-            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api" }
-            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api" },
+            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api", "payment:write" }
+            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api", "payment:write" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,
