@@ -5,18 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.Auth.Services;
 
-internal sealed class AuthLocalClaimsProvider : IProfileClaimsProvider
+internal sealed class LocalProfileClaimsProvider : IProfileClaimsProvider
 {
-    private readonly AuthDbContext authContext;
+    private readonly AuthDbContext context;
 
-    public AuthLocalClaimsProvider(AuthDbContext authContext)
+    public LocalProfileClaimsProvider(AuthDbContext context)
     {
-        this.authContext = authContext;
+        this.context = context;
     }
 
     public async Task<IEnumerable<Claim>> GetClaimsAsync(Guid subjectId)
     {
-        var credential = await authContext.Credentials
+        var credential = await context.Credentials
             .Where(c => c.Id == subjectId)
             .Select(c => new { c.Email, c.IsEmailVerified })
             .FirstOrDefaultAsync();
