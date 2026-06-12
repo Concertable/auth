@@ -11,7 +11,7 @@ internal sealed class EmailVerificationTokenEntity : IIdEntity
     public string Token { get; private set; } = null!;
     public DateTime Expires { get; private set; }
 
-    public bool IsActive => DateTime.UtcNow < Expires;
+    public bool IsActive(DateTime utcNow) => utcNow < Expires;
 
     public static EmailVerificationTokenEntity Create(Guid credentialId, string token, DateTime expires) => new()
     {
