@@ -62,8 +62,8 @@ Auth's `ProfileService` delegates to `IProfileClaimsProvider` implementations:
 
 | Provider | Claims | Source |
 |---|---|---|
-| `AuthLocalClaimsProvider` | `email`, `email_verified` | Auth DB |
-| `B2BProfileClaimsProvider` | `role` (and other B2B claims) | HTTP call to B2B `/internal/users/{sub}/claims` |
+| `LocalProfileClaimsProvider` | `email`, `email_verified` | Auth DB |
+| `RemoteProfileClaimsProvider` (registered once per source: B2B, Customer) | `role`, `owner` (whatever the source issues) | HTTP call to the source service's `/internal/users/{sub}/claims` |
 
 Auth never stores role claims directly. The `role` claim is owned by B2B and fetched at token issuance time.
 
