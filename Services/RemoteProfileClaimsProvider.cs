@@ -50,7 +50,7 @@ internal sealed class RemoteProfileClaimsProvider : IProfileClaimsProvider
         }
         catch (ApiException ex)
         {
-            logger.RemoteClaimsNonSuccess(source, subjectId, (int)ex.StatusCode, ex.Content ?? "");
+            logger.RemoteClaimsNonSuccess(source, subjectId, (int)ex.StatusCode, ex.Content ?? string.Empty);
             return [];
         }
         catch (Exception ex)
