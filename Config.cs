@@ -19,15 +19,19 @@ public static class Config
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
+        // The `owner` claim (Payment's opaque payout-account key) rides each data service's OWN api
+        // resource — B2B issues its tenant id, Customer the user's own id — so interactive clients get it
+        // by requesting the scope they already use. It must NOT hang off the payment resource: payment:write
+        // is the service-only gate on the gRPC money surface, and a user token must never be able to carry it.
         new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
             Scopes = { "concertable.b2b.api", "user:claims" },
-            UserClaims = { "role" }
+            UserClaims = { "role", "owner" }
         },
         new ApiResource("concertable.customer.api", "Concertable Customer API")
         {
             Scopes = { "concertable.customer.api", "user:claims" },
-            UserClaims = { "role" }
+            UserClaims = { "role", "owner" }
         },
         new ApiResource("concertable.search.api", "Concertable Search API")
         {
@@ -35,8 +39,7 @@ public static class Config
         },
         new ApiResource("concertable.payment.api", "Concertable Payment API")
         {
-            Scopes = { "payment:write" },
-            UserClaims = { "owner" }
+            Scopes = { "payment:write" }
         },
     ];
 
@@ -114,8 +117,8 @@ public static class Config
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
         AllowedScopes = clientId == ClientIds.CustomerWeb
-            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api", "payment:write" }
-            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api", "payment:write" },
+            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api" }
+            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,
