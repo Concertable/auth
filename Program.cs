@@ -4,6 +4,7 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Events;
 using Concertable.Auth.Data.Seeders;
+using Concertable.Auth.Extensions;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
 using Concertable.Seed.Shared;
@@ -74,18 +75,19 @@ builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
         .UseSeedingSupport(sp));
 
 builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
-builder.Services.AddScoped<IProfileClaimsProvider, AuthLocalClaimsProvider>();
-builder.Services.AddScoped<IProfileClaimsProvider, B2BProfileClaimsProvider>();
-builder.Services.AddScoped<IProfileClaimsProvider, CustomerProfileClaimsProvider>();
+builder.Services.AddScoped<IProfileClaimsProvider, LocalProfileClaimsProvider>();
+builder.Services.AddRemoteProfileClaimsProvider<IB2BUserClaimsApi>("B2B", builder.Configuration["Services:B2BApiUrl"]);
+builder.Services.AddRemoteProfileClaimsProvider<ICustomerUserClaimsApi>("Customer", builder.Configuration["Services:CustomerApiUrl"]);
 builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>
 {
-    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services__auth__https__0"] ?? "";
+    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"] ?? "";
     opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"] ?? "";
     opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? "";
 });
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddSingleton<ITokenGenerator, CryptoRandomTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<IDbInitializer, AuthDbInitializer>();

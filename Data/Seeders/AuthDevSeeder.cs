@@ -48,13 +48,10 @@ internal sealed class AuthDevSeeder : IDevSeeder
             toAdd.Add(CredentialFactory.Create(
                 SeedCustomers.CustomerId(i), SeedCustomers.CustomerEmail(i), passwordHash, ClientIds.CustomerWeb));
 
-        for (int i = 1; i <= SeedUsers.ManagerCount; i++)
+        foreach (var m in SeedUsers.Managers)
             toAdd.Add(CredentialFactory.Create(
-                SeedUsers.ArtistManagerId(i), SeedUsers.ArtistManagerEmail(i), passwordHash, ClientIds.ArtistWeb));
-
-        for (int i = 1; i <= SeedUsers.ManagerCount; i++)
-            toAdd.Add(CredentialFactory.Create(
-                SeedUsers.VenueManagerId(i), SeedUsers.VenueManagerEmail(i), passwordHash, ClientIds.VenueWeb));
+                m.Id, m.Email, passwordHash,
+                m.Kind == ManagerKind.Artist ? ClientIds.ArtistWeb : ClientIds.VenueWeb));
 
         logger.SeedingCredentials(existing, toAdd.Count);
         context.Credentials.AddRange(toAdd);
