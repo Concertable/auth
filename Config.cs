@@ -24,10 +24,12 @@ public static class Config
         // issues `owner` — its payout proxy passes the active tenant id to Payment explicitly, and one claim
         // can't represent a multi-tenant user (USER_MODEL_PLAN Phase 5). `owner` must NOT hang off the payment
         // resource: payment:write gates the service-only gRPC money surface and no user token may carry it.
+        // `email` is carried so B2B can attribute created profiles (Venue/Artist) to the operator's email,
+        // sourced from ICurrentUser — without it, create fails domain validation ("Email is required").
         new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
             Scopes = { "concertable.b2b.api", "user:claims" },
-            UserClaims = { "role" }
+            UserClaims = { "role", "email" }
         },
         new ApiResource("concertable.customer.api", "Concertable Customer API")
         {
