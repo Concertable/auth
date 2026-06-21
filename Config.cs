@@ -19,14 +19,12 @@ public static class Config
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
-        // The `owner` claim (Payment's opaque payout-account key) rides each data service's OWN api
-        // resource — B2B issues its tenant id, Customer the user's own id — so interactive clients get it
-        // by requesting the scope they already use. It must NOT hang off the payment resource: payment:write
-        // is the service-only gate on the gRPC money surface, and a user token must never be able to carry it.
+        /* B2B carries `email` not `owner`: it passes the active tenant id to Payment explicitly, and
+           one claim can't model a multi-tenant user. `owner` stays Customer-only. */
         new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
             Scopes = { "concertable.b2b.api", "user:claims" },
-            UserClaims = { "role", "owner" }
+            UserClaims = { "role", "email" }
         },
         new ApiResource("concertable.customer.api", "Concertable Customer API")
         {
