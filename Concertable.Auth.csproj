@@ -7,14 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
-    <PackageReference Include="Duende.IdentityServer" Version="7.4.7" />
-    <PackageReference Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+    <PackageReference Include="BCrypt.Net-Next" />
+    <PackageReference Include="Duende.IdentityServer" />
+    <PackageReference Include="Duende.IdentityServer.EntityFramework" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Refit.HttpClientFactory" Version="11.0.1" />
+    <PackageReference Include="Refit.HttpClientFactory" />
   </ItemGroup>
 
   <ItemGroup>
