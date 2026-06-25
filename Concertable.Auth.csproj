@@ -17,20 +17,24 @@
     <PackageReference Include="Refit.HttpClientFactory" />
   </ItemGroup>
 
+  <!-- Shared platform + Auth.Contracts consumed as published packages from the org feed
+       (Phase 2b of SERVICE_BUILD_SEPARATION). Versions are pinned in Directory.Packages.props.
+       Every one of these escaped api/Concertable.Auth/ as a ProjectReference; as packages this
+       folder carves out and builds from its own closure. -->
   <ItemGroup>
-    <ProjectReference Include="..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" />
-    <ProjectReference Include="..\Shared\Seed\Concertable.Seed.Shared\Concertable.Seed.Shared.csproj" />
-    <ProjectReference Include="..\Shared\Seed\Concertable.Seed.Identity\Concertable.Seed.Identity.csproj" />
-    <ProjectReference Include="..\Concertable.DataAccess\Concertable.DataAccess.Application\Concertable.DataAccess.Application.csproj" />
-    <ProjectReference Include="..\Concertable.DataAccess\Concertable.DataAccess.Infrastructure\Concertable.DataAccess.Infrastructure.csproj" />
-    <ProjectReference Include="..\Concertable.Messaging\Concertable.Messaging.AzureServiceBus\Concertable.Messaging.AzureServiceBus.csproj" />
-    <ProjectReference Include="..\Concertable.ServiceDefaults\Concertable.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
-    <ProjectReference Include="..\Shared\Concertable.Shared.Blob\Concertable.Shared.Blob.Infrastructure\Concertable.Shared.Blob.Infrastructure.csproj" />
-    <ProjectReference Include="..\Shared\Concertable.Shared.Email\Concertable.Shared.Email.Infrastructure\Concertable.Shared.Email.Infrastructure.csproj" />
-    <ProjectReference Include="..\Shared\Concertable.Shared.Geocoding\Concertable.Shared.Geocoding.Infrastructure\Concertable.Shared.Geocoding.Infrastructure.csproj" />
-    <ProjectReference Include="..\Shared\Concertable.Shared.Imaging\Concertable.Shared.Imaging.Infrastructure\Concertable.Shared.Imaging.Infrastructure.csproj" />
-    <ProjectReference Include="..\Shared\Concertable.Shared.Pdf\Concertable.Shared.Pdf.Infrastructure\Concertable.Shared.Pdf.Infrastructure.csproj" />
+    <PackageReference Include="Concertable.Auth.Contracts" />
+    <PackageReference Include="Concertable.Seed.Shared" />
+    <PackageReference Include="Concertable.Seed.Identity" />
+    <PackageReference Include="Concertable.DataAccess.Application" />
+    <PackageReference Include="Concertable.DataAccess.Infrastructure" />
+    <PackageReference Include="Concertable.Messaging.AzureServiceBus" />
+    <PackageReference Include="Concertable.ServiceDefaults" />
+    <PackageReference Include="Concertable.Messaging.Infrastructure" />
+    <PackageReference Include="Concertable.Shared.Blob.Infrastructure" />
+    <PackageReference Include="Concertable.Shared.Email.Infrastructure" />
+    <PackageReference Include="Concertable.Shared.Geocoding.Infrastructure" />
+    <PackageReference Include="Concertable.Shared.Imaging.Infrastructure" />
+    <PackageReference Include="Concertable.Shared.Pdf.Infrastructure" />
   </ItemGroup>
 
 </Project>

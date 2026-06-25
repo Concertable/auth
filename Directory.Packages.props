@@ -12,6 +12,25 @@
     <PackageVersion Include="Refit.HttpClientFactory" Version="11.0.1" />
   </ItemGroup>
 
+  <!-- Shared platform consumed from the org GitHub Packages feed (Phase 2b of
+       SERVICE_BUILD_SEPARATION). Lockstep version published by publish-packages.yml; bump only
+       to a version that is already live on the feed, else restore NU1101s. -->
+  <ItemGroup>
+    <PackageVersion Include="Concertable.Auth.Contracts" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Seed.Shared" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Seed.Identity" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.DataAccess.Application" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.DataAccess.Infrastructure" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Messaging.AzureServiceBus" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Messaging.Infrastructure" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.ServiceDefaults" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Shared.Blob.Infrastructure" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Shared.Email.Infrastructure" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Shared.Geocoding.Infrastructure" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Shared.Imaging.Infrastructure" Version="0.1.0-alpha.0.526" />
+    <PackageVersion Include="Concertable.Shared.Pdf.Infrastructure" Version="0.1.0-alpha.0.526" />
+  </ItemGroup>
+
   <ItemGroup>
     <GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.98" />
   </ItemGroup>
