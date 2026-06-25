@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Description>Concertable Auth service contracts: cross-service integration events and DTOs published by Auth and consumed by other services.</Description>
   </PropertyGroup>
 
   <ItemGroup>
