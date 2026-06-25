@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="BCrypt.Net-Next" Version="4.1.0" />
+    <PackageVersion Include="Duende.IdentityServer" Version="7.4.7" />
+    <PackageVersion Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
+    <PackageVersion Include="Refit.HttpClientFactory" Version="11.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.98" />
+  </ItemGroup>
+
+</Project>
