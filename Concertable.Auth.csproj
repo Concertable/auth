@@ -17,10 +17,8 @@
     <PackageReference Include="Refit.HttpClientFactory" />
   </ItemGroup>
 
-  <!-- Shared platform + Auth.Contracts consumed as published packages from the org feed
-       (Phase 2b of SERVICE_BUILD_SEPARATION). Versions are pinned in Directory.Packages.props.
-       Every one of these escaped api/Concertable.Auth/ as a ProjectReference; as packages this
-       folder carves out and builds from its own closure. -->
+  <!-- Shared platform + Auth.Contracts as feed packages (versions in Directory.Packages.props).
+       Keep these as PackageReferences, never ProjectReferences, so Auth carves out standalone. -->
   <ItemGroup>
     <PackageReference Include="Concertable.Auth.Contracts" />
     <PackageReference Include="Concertable.Seed.Shared" />
