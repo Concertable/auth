@@ -6,6 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- The standalone AppHost lives in this folder so it ships with the Auth mirror; a rooted Web SDK
+       project globs **/* under its root, so exclude the AppHost subtree (it has its own csproj). -->
+  <ItemGroup>
+    <Compile Remove="Concertable.Auth.AppHost/**/*.cs" />
+    <Content Remove="Concertable.Auth.AppHost/**/*" />
+    <None Remove="Concertable.Auth.AppHost/**/*" />
+    <EmbeddedResource Remove="Concertable.Auth.AppHost/**/*" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="Duende.IdentityServer" />
