@@ -12,8 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Concertable.AppHost.Shared\Concertable.AppHost.Shared.csproj" IsAspireProjectResource="false" />
-    <ProjectReference Include="..\Concertable.Auth.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.AppHost.Shared\Concertable.AppHost.Shared.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\Concertable.Auth\Concertable.Auth.csproj" />
   </ItemGroup>
 
 </Project>
