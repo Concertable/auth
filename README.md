@@ -22,7 +22,7 @@ exported as `GITHUB_PACKAGES_TOKEN` (the `nuget.config` reads it):
 
 ```sh
 export GITHUB_PACKAGES_TOKEN=<your read:packages PAT>
-dotnet build Concertable.Auth.csproj
+dotnet build src/Concertable.Auth/Concertable.Auth.csproj
 ```
 
 (In the monorepo's CI the same variable is supplied by the workflow's `GITHUB_TOKEN`; standalone,
