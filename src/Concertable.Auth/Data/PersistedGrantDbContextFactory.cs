@@ -14,7 +14,7 @@ public sealed class PersistedGrantDbContextFactory : IDesignTimeDbContextFactory
         services.AddSingleton(new OperationalStoreOptions { DefaultSchema = "idsrv" });
         services.AddDbContext<PersistedGrantDbContext>(opts =>
             opts.UseSqlServer(
-                "Server=localhost,1433;Database=concertable-b2b;User Id=sa;Password=Password11!;TrustServerCertificate=True",
+                DesignTimeConnectionString.B2B(),
                 sql => sql.MigrationsAssembly(typeof(Program).Assembly.GetName().Name)));
         return services.BuildServiceProvider().GetRequiredService<PersistedGrantDbContext>();
     }
