@@ -11,7 +11,7 @@ internal sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbC
         var services = new ServiceCollection();
         services.AddSingleton<AuthConfigurationProvider>();
         services.AddDbContext<AuthDbContext>(opts =>
-            opts.UseSqlServer(DesignTimeConnectionString.B2B()));
+            opts.UseSqlServer(DesignTimeConfiguration.ConnectionString()));
         return services.BuildServiceProvider().GetRequiredService<AuthDbContext>();
     }
 }
