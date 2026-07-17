@@ -10,7 +10,7 @@ provision its own user/profile rows). As an adapter, data services may call it s
 
 Development happens in the **monorepo** ([`Concertable/concertable`](https://github.com/Concertable/concertable)),
 under `api/Concertable.Auth/`. That folder is **automatically mirrored** to the read-only repo
-[`Concertable/concertable-auth`](https://github.com/Concertable/concertable-auth) on every push to
+[`Concertable/auth`](https://github.com/Concertable/auth) on every push to
 `master`. **Don't open PRs against the mirror** — nothing flows back from it.
 
 ## Building standalone
