@@ -83,7 +83,8 @@ builder.Services.AddClientCredentials(opts =>
 {
     opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"] ?? "";
     opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"] ?? "";
-    opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? "";
+    // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
+    opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? string.Empty;
 });
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
