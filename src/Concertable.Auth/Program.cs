@@ -81,8 +81,12 @@ builder.Services.AddRemoteProfileClaimsProvider<ICustomerUserClaimsApi>("Custome
 builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>
 {
-    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"] ?? "";
-    opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"] ?? "";
+    opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"]
+        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
+    opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"]
+        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            : throw new InvalidOperationException("ServiceAuth:AuthClientId is required."));
     // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
     opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? string.Empty;
 });
@@ -100,7 +104,8 @@ builder.Services.AddInProcessEventDispatch();
 builder.Services.AddAzureServiceBusTransport(
     opts =>
     {
-        opts.ConnectionString = builder.Configuration.GetConnectionString("asb") ?? "";
+        opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
+            ?? throw new InvalidOperationException("Connection string 'asb' is required.");
         opts.ServiceName = "concertable-auth";
     },
     reg =>
