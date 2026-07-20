@@ -87,8 +87,9 @@ builder.Services.AddClientCredentials(opts =>
     opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"]
         ?? (builder.Environment.IsEnvironment("Testing") ? null!
             : throw new InvalidOperationException("ServiceAuth:AuthClientId is required."));
-    // genuine optional — secret-less local client (dev/E2E/Testing); do NOT fail-fast
-    opts.ClientSecret = builder.Configuration["ServiceAuth:AuthClientSecret"] ?? string.Empty;
+    // optional — a secret-less/public client (dev/E2E/Testing) has none; leave it null, never "" (a fake empty secret)
+    if (builder.Configuration["ServiceAuth:AuthClientSecret"] is string clientSecret)
+        opts.ClientSecret = clientSecret;
 });
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
