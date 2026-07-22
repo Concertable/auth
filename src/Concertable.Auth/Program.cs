@@ -95,6 +95,7 @@ builder.Services.AddClientCredentials(opts =>
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddSingleton<ITokenGenerator, CryptoRandomTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 
 builder.Services.AddScoped<IDbInitializer, AuthDbInitializer>();
 if (!builder.Environment.IsProduction())

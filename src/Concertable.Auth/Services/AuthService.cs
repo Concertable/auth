@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
-using Concertable.Messaging.Infrastructure.Outbox;
 using Concertable.Shared.Email.Application;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
@@ -12,7 +11,7 @@ namespace Concertable.Auth.Services;
 internal sealed class AuthService : IAuthService
 {
     private readonly AuthDbContext context;
-    private readonly IDbContextAccessor contextAccessor;
+    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly IPasswordHasher passwordHasher;
     private readonly IIdentityServerInteractionService interaction;
     private readonly IEmailSender emailSender;
@@ -21,7 +20,7 @@ internal sealed class AuthService : IAuthService
 
     public AuthService(
         AuthDbContext context,
-        IDbContextAccessor contextAccessor,
+        IOutboxUnitOfWorkBehavior outboxBehavior,
         IPasswordHasher passwordHasher,
         IIdentityServerInteractionService interaction,
         IEmailSender emailSender,
@@ -29,7 +28,7 @@ internal sealed class AuthService : IAuthService
         TimeProvider timeProvider)
     {
         this.context = context;
-        this.contextAccessor = contextAccessor;
+        this.outboxBehavior = outboxBehavior;
         this.passwordHasher = passwordHasher;
         this.interaction = interaction;
         this.emailSender = emailSender;
@@ -90,16 +89,8 @@ internal sealed class AuthService : IAuthService
         var expires = timeProvider.GetUtcNow().UtcDateTime.AddHours(24);
         context.EmailVerificationTokens.Add(EmailVerificationTokenEntity.Create(userId, token, expires));
 
-        try
-        {
-            contextAccessor.Context = context;
-            await emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct);
-            await context.SaveChangesAsync(ct);
-        }
-        finally
-        {
-            contextAccessor.Context = null;
-        }
+        await outboxBehavior.ExecuteAsync(() =>
+            emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct));
     }
 
     public async Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default)
@@ -129,17 +120,9 @@ internal sealed class AuthService : IAuthService
         context.PasswordResetTokens.Add(PasswordResetTokenEntity.Create(credential.Id, token, expires));
 
         var link = $"{resetUrl}?token={Uri.EscapeDataString(token)}";
-        try
-        {
-            contextAccessor.Context = context;
-            await emailSender.SendEmailAsync(email, "Reset your password",
-                $"Click here to reset your password: {link}. This link expires in 1 hour.");
-            await context.SaveChangesAsync(ct);
-        }
-        finally
-        {
-            contextAccessor.Context = null;
-        }
+        await outboxBehavior.ExecuteAsync(() =>
+            emailSender.SendEmailAsync(email, "Reset your password",
+                $"Click here to reset your password: {link}. This link expires in 1 hour."));
     }
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
