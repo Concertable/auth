@@ -44,7 +44,7 @@ if (builder.Environment.IsDevelopment())
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-        options.KnownNetworks.Clear();
+        options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
 
@@ -116,19 +116,22 @@ builder.Services.AddAzureServiceBusTransport(
 
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
+string RequireSecret(string key) => builder.Configuration[key]
+    ?? throw new InvalidOperationException($"Configuration '{key}' is required.");
+
 var clients = new List<Client>(Config.WebClients(spaClient))
 {
     Config.CustomerMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Customer"]),
     Config.VenueMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
     Config.ArtistMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
     Config.ServiceClient("concertable-b2b",
-        builder.Configuration["ServiceAuth:B2BClientSecret"]!,
+        RequireSecret("ServiceAuth:B2BClientSecret"),
         "payment:write"),
     Config.ServiceClient("concertable-customer",
-        builder.Configuration["ServiceAuth:CustomerClientSecret"]!,
+        RequireSecret("ServiceAuth:CustomerClientSecret"),
         "payment:write"),
     Config.ServiceClient("concertable-auth",
-        builder.Configuration["ServiceAuth:AuthClientSecret"]!,
+        RequireSecret("ServiceAuth:AuthClientSecret"),
         "user:claims"),
 };
 if (builder.Environment.IsEnvironment("E2E"))
