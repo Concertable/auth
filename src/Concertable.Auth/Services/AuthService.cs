@@ -90,7 +90,7 @@ internal sealed class AuthService : IAuthService
         context.EmailVerificationTokens.Add(EmailVerificationTokenEntity.Create(userId, token, expires));
 
         await outboxBehavior.ExecuteAsync(() =>
-            emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct));
+            emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct), ct);
     }
 
     public async Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default)
@@ -122,7 +122,7 @@ internal sealed class AuthService : IAuthService
         var link = $"{resetUrl}?token={Uri.EscapeDataString(token)}";
         await outboxBehavior.ExecuteAsync(() =>
             emailSender.SendEmailAsync(email, "Reset your password",
-                $"Click here to reset your password: {link}. This link expires in 1 hour."));
+                $"Click here to reset your password: {link}. This link expires in 1 hour."), ct);
     }
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
