@@ -20,6 +20,7 @@ using Concertable.Messaging.AzureServiceBus.Extensions;
 using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.ServiceDefaults;
 using Concertable.Shared.Blob.Infrastructure.Extensions;
+using Concertable.Shared.Email.Application;
 using Concertable.Shared.Email.Infrastructure.Extensions;
 using Concertable.Shared.Geocoding.Infrastructure.Extensions;
 using Concertable.Shared.Imaging.Infrastructure.Extensions;
@@ -112,6 +113,8 @@ builder.Services.AddAzureServiceBusTransport(
     reg =>
     {
         reg.Publishes<CredentialRegisteredEvent>();
+        reg.HandleCommand<SendEmailCommand>();
+        reg.HandleCommand<SendVerificationEmailCommand>();
     });
 
 var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
