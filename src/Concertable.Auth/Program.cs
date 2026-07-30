@@ -57,6 +57,7 @@ builder.Services.AddKeyedSingleton<IGeometryProvider, MetricGeometryProvider>(Ge
 builder.Services.AddSharedInfrastructure(builder.Configuration);
 builder.Services.AddSharedBlob(builder.Configuration);
 builder.Services.AddSharedEmail(builder.Configuration);
+builder.Services.UseOutboxEmailSender();
 builder.Services.AddSharedGeocoding();
 builder.Services.AddSharedImaging();
 builder.Services.AddSharedPdf();
@@ -95,6 +96,7 @@ builder.Services.AddClientCredentials(opts =>
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddSingleton<ITokenGenerator, CryptoRandomTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
 
 builder.Services.AddScoped<IDbInitializer, AuthDbInitializer>();
 if (!builder.Environment.IsProduction())
