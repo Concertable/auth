@@ -19,12 +19,13 @@ public static class Config
 
     public static IEnumerable<ApiResource> ApiResources =>
     [
-        /* B2B carries `email` not `owner`: it passes the active tenant id to Payment explicitly, and
-           one claim can't model a multi-tenant user. `owner` stays Customer-only. */
+        /* B2B is identity-only: `email` comes from the local Auth credential, and authority is the
+           request-scoped active tenant (X-Tenant-Id → membership), never a token claim. No `role`, no
+           `owner` — one claim can't model a multi-tenant user. `owner` stays Customer-only. */
         new ApiResource("concertable.b2b.api", "Concertable B2B API")
         {
-            Scopes = { "concertable.b2b.api", "user:claims" },
-            UserClaims = { "role", "email" }
+            Scopes = { "concertable.b2b.api" },
+            UserClaims = { "email" }
         },
         new ApiResource("concertable.customer.api", "Concertable Customer API")
         {
@@ -116,7 +117,7 @@ public static class Config
 
         AllowedScopes = clientId == ClientIds.CustomerWeb
             ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api" }
-            : new HashSet<string> { "openid", "profile", "roles", "concertable.b2b.api" },
+            : new HashSet<string> { "openid", "profile", "concertable.b2b.api" },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,
