@@ -78,7 +78,6 @@ builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
 
 builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
 builder.Services.AddScoped<IProfileClaimsProvider, LocalProfileClaimsProvider>();
-builder.Services.AddRemoteProfileClaimsProvider<IB2BUserClaimsApi>("B2B", builder.Configuration["Services:B2BApiUrl"]);
 builder.Services.AddRemoteProfileClaimsProvider<ICustomerUserClaimsApi>("Customer", builder.Configuration["Services:CustomerApiUrl"]);
 builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>

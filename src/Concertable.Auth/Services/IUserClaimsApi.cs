@@ -13,9 +13,6 @@ internal interface IUserClaimsApi
     Task<List<ClaimDto>> GetClaimsAsync(Guid subjectId);
 }
 
-/// <summary>B2B's <see cref="IUserClaimsApi"/> endpoint. Refit configures clients per interface type, so each source service needs its own marker.</summary>
-internal interface IB2BUserClaimsApi : IUserClaimsApi;
-
 /// <summary>Customer's <see cref="IUserClaimsApi"/> endpoint. Refit configures clients per interface type, so each source service needs its own marker.</summary>
 internal interface ICustomerUserClaimsApi : IUserClaimsApi;
 
