@@ -49,7 +49,7 @@ Each service independently decides how to react to `CredentialRegisteredEvent`:
 
 | Service | Handler | Behaviour |
 |---|---|---|
-| **B2B** | `CredentialRegisteredHandler` | Maps `ClientId` → `Role`; creates `UserEntity` + role-specific profile (`VenueManagerProfileEntity` or `ArtistManagerProfileEntity`). Ignores non-B2B clients. |
+| **B2B** | `CredentialRegisteredHandler` | Accepts B2B client IDs and creates the role-agnostic `UserEntity` projection; the admin client also creates `AdminProfileEntity`. Ignores non-B2B clients. |
 | **Customer** | `UserCreationHandler` | Creates a role-agnostic `UserEntity`. Ignores non-customer clients. |
 | **Payment** | `CustomerRegisteredHandler` | Provisions Stripe Customer account for customer clients. |
 | **Payment** | `ManagerRegisteredHandler` | Provisions Stripe Customer + Connect accounts for B2B clients. |
@@ -63,9 +63,9 @@ Auth's `ProfileService` delegates to `IProfileClaimsProvider` implementations:
 | Provider | Claims | Source |
 |---|---|---|
 | `LocalProfileClaimsProvider` | `email`, `email_verified` | Auth DB |
-| `RemoteProfileClaimsProvider` (registered once per source: B2B, Customer) | `role`, `owner` (whatever the source issues) | HTTP call to the source service's `/internal/users/{sub}/claims` |
+| `RemoteProfileClaimsProvider` (Customer only) | Customer-owned `role` and `owner` | HTTP call to Customer's `/internal/users/{sub}/claims` |
 
-Auth never stores role claims directly. The `role` claim is owned by B2B and fetched at token issuance time.
+Auth never stores authority claims directly. B2B tokens are identity-only; Customer's transitional `role` and `owner` claims are fetched from Customer at token issuance time.
 
 ## What Auth Does NOT Own
 
