@@ -15,13 +15,13 @@ internal sealed class ResourceOwnerPasswordValidator : IResourceOwnerPasswordVal
     public async Task ValidateAsync(ResourceOwnerPasswordValidationContext context)
     {
         var principal = await authService.LoginAsync(context.UserName, context.Password);
-        if (principal is null)
+        if (!principal.TryGetValue(out var authenticatedPrincipal))
         {
             context.Result = new GrantValidationResult(TokenRequestErrors.InvalidGrant, "Invalid credentials");
             return;
         }
 
-        var sub = principal.FindFirst("sub")!.Value;
+        var sub = authenticatedPrincipal.FindFirst("sub")!.Value;
         context.Result = new GrantValidationResult(sub, "password");
     }
 }
