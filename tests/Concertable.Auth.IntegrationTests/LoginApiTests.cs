@@ -24,6 +24,37 @@ public sealed class LoginApiTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    #region Auth service
+
+    [Fact]
+    public async Task LoginService_ValidCredential_ReturnsSomePrincipal()
+    {
+        const string email = "service-login@example.com";
+        var credentialId = await fixture.CreateCredentialAsync(email, Password);
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.LoginAsync(email, Password));
+
+        Assert.True(result.TryGetValue(out var principal));
+        Assert.Equal(credentialId.ToString(), principal.FindFirst("sub")?.Value);
+    }
+
+    [Theory]
+    [InlineData("unknown")]
+    [InlineData("wrong-password")]
+    [InlineData("unverified")]
+    public async Task LoginService_AuthenticationMiss_ReturnsNone(string scenario)
+    {
+        var (email, password) = await ArrangeAuthenticationMissAsync(scenario);
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.LoginAsync(email, password));
+
+        Assert.True(result.IsNone);
+    }
+
+    #endregion
+
     #region Razor login
 
     [Fact]

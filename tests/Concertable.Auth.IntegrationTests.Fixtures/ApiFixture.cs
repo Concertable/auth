@@ -12,6 +12,7 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Stores;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -219,6 +220,26 @@ public sealed class ApiFixture : IAsyncLifetime
     {
         await using var scope = factory.Services.CreateAsyncScope();
         await action(scope.ServiceProvider.GetRequiredService<IAuthService>());
+    }
+
+    public async Task<T> InvokeAuthServiceAsync<T>(Func<IAuthService, Task<T>> action)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var accessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
+        var previousContext = accessor.HttpContext;
+        accessor.HttpContext = new DefaultHttpContext
+        {
+            RequestServices = scope.ServiceProvider
+        };
+
+        try
+        {
+            return await action(scope.ServiceProvider.GetRequiredService<IAuthService>());
+        }
+        finally
+        {
+            accessor.HttpContext = previousContext;
+        }
     }
 
     public async Task<string> CreateLogoutContextAsync(string postLogoutRedirectUri)

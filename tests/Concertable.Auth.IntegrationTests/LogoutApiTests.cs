@@ -22,6 +22,34 @@ public sealed class LogoutApiTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    #region Auth service
+
+    [Fact]
+    public async Task LogoutService_ValidContext_ReturnsSomeRedirect()
+    {
+        const string expectedRedirect = "https://localhost:5174";
+        var logoutId = await fixture.CreateLogoutContextAsync(expectedRedirect);
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.LogoutAsync(logoutId));
+
+        Assert.True(result.TryGetValue(out var redirect));
+        Assert.Equal(expectedRedirect, redirect);
+    }
+
+    [Fact]
+    public async Task LogoutService_MissingContext_ReturnsNone()
+    {
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.LogoutAsync(null));
+
+        Assert.True(result.IsNone);
+    }
+
+    #endregion
+
+    #region Razor logout
+
     [Fact]
     public async Task Logout_GetWithoutContext_RendersConfirmation()
     {
@@ -60,4 +88,6 @@ public sealed class LogoutApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Redirect);
         Assert.Equal("https://localhost:5174", response.Headers.Location?.OriginalString);
     }
+
+    #endregion
 }

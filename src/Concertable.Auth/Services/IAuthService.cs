@@ -1,11 +1,12 @@
 using System.Security.Claims;
+using Concertable.Kernel.Functional;
 
 namespace Concertable.Auth.Services;
 
 public interface IAuthService
 {
-    Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default);
-    Task<string?> LogoutAsync(string? logoutId, CancellationToken ct = default);
+    Task<Option<ClaimsPrincipal>> LoginAsync(string email, string password, CancellationToken ct = default);
+    Task<Option<string>> LogoutAsync(string? logoutId, CancellationToken ct = default);
 
     Task<RegisterResult> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default);
     Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default);
