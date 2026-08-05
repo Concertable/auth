@@ -51,17 +51,17 @@ internal sealed class AuthService : IAuthService
         return Option.Some(new ClaimsPrincipal(identity));
     }
 
-    public async Task<RegisterResult> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
+    public async Task<UnitResult<RegisterError>> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
     {
         if (await context.Credentials.AnyAsync(c => c.Email == email, ct))
-            return RegisterResult.EmailAlreadyExists;
+            return UnitResult.Failure(RegisterError.EmailAlreadyExists);
 
         var credential = CredentialEntity.Create(email, passwordHasher.Hash(password), clientId);
         context.Credentials.Add(credential);
         await context.SaveChangesAsync(ct);
 
         await SendEmailVerificationAsync(credential.Id, verifyUrl, ct);
-        return RegisterResult.Success;
+        return UnitResult.Success<RegisterError>();
     }
 
     public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
@@ -94,21 +94,22 @@ internal sealed class AuthService : IAuthService
             emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct), ct);
     }
 
-    public async Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default)
+    public async Task<UnitResult<VerifyEmailError>> VerifyEmailAsync(string token, CancellationToken ct = default)
     {
         var tokenEntity = await context.EmailVerificationTokens
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
         if (tokenEntity is null || !tokenEntity.IsActive(timeProvider.GetUtcNow().UtcDateTime))
-            return false;
+            return UnitResult.Failure(VerifyEmailError.InvalidOrExpiredToken);
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
-        if (credential is null) return false;
+        if (credential is null)
+            return UnitResult.Failure(VerifyEmailError.InvalidOrExpiredToken);
 
         credential.VerifyEmail();
         context.EmailVerificationTokens.Remove(tokenEntity);
         await context.SaveChangesAsync(ct);
-        return true;
+        return UnitResult.Success<VerifyEmailError>();
     }
 
     public async Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)

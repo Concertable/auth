@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.Auth.Services;
 using Xunit.Abstractions;
 
 namespace Concertable.Auth.IntegrationTests;
@@ -21,6 +22,57 @@ public sealed class EmailVerificationApiTests : IAsyncLifetime
         fixture.DetachOutput();
         return Task.CompletedTask;
     }
+
+    #region Auth service
+
+    [Fact]
+    public async Task VerifyEmailService_ValidToken_ReturnsSuccess()
+    {
+        const string token = "service-valid-verification-token";
+        var credentialId = await fixture.CreateCredentialAsync(
+            "service-verify@example.com",
+            "Password123!",
+            verified: false);
+        await fixture.AddEmailVerificationTokenAsync(
+            credentialId,
+            token,
+            DateTime.UtcNow.AddHours(1));
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.VerifyEmailAsync(token));
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(await fixture.GetEmailVerificationTokenAsync(credentialId));
+    }
+
+    [Fact]
+    public async Task VerifyEmailService_InvalidToken_ReturnsOwnedFailure()
+    {
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.VerifyEmailAsync("unknown-verification-token"));
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(VerifyEmailError.InvalidOrExpiredToken, error);
+    }
+
+    [Fact]
+    public async Task VerifyEmailService_CancelledDatabaseOperation_PropagatesCancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.InvokeAuthServiceAsync(async service =>
+            {
+                _ = await service.VerifyEmailAsync(
+                    "cancelled-verification-token",
+                    cancellation.Token);
+            }));
+    }
+
+    #endregion
+
+    #region Razor verification
 
     [Fact]
     public async Task VerifyEmail_ValidToken_VerifiesCredentialAndConsumesToken()
@@ -62,6 +114,7 @@ public sealed class EmailVerificationApiTests : IAsyncLifetime
             "Password123!",
             verified: false);
         var requestPath = "/Account/VerifyEmail";
+        string? storedToken = null;
 
         switch (scenario)
         {
@@ -69,18 +122,20 @@ public sealed class EmailVerificationApiTests : IAsyncLifetime
                 requestPath += "?token=unknown-verification-token";
                 break;
             case "expired":
+                storedToken = "expired-verification-token";
                 await fixture.AddEmailVerificationTokenAsync(
                     credentialId,
-                    "expired-verification-token",
+                    storedToken,
                     DateTime.UtcNow.AddMinutes(-1));
-                requestPath += "?token=expired-verification-token";
+                requestPath += $"?token={storedToken}";
                 break;
             case "orphaned":
+                storedToken = "orphaned-verification-token";
                 await fixture.AddEmailVerificationTokenAsync(
                     Guid.NewGuid(),
-                    "orphaned-verification-token",
+                    storedToken,
                     DateTime.UtcNow.AddHours(1));
-                requestPath += "?token=orphaned-verification-token";
+                requestPath += $"?token={storedToken}";
                 break;
         }
 
@@ -94,5 +149,9 @@ public sealed class EmailVerificationApiTests : IAsyncLifetime
         var credential = await fixture.GetCredentialAsync(email, "Password123!");
         Assert.NotNull(credential);
         Assert.False(credential.IsEmailVerified);
+        if (storedToken is not null)
+            Assert.True(await fixture.EmailVerificationTokenExistsAsync(storedToken));
     }
+
+    #endregion
 }

@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.Auth.Services;
 using Xunit.Abstractions;
 
 namespace Concertable.Auth.IntegrationTests;
@@ -22,6 +23,77 @@ public sealed class RegistrationApiTests : IAsyncLifetime
         fixture.DetachOutput();
         return Task.CompletedTask;
     }
+
+    #region Auth service
+
+    [Fact]
+    public async Task RegisterService_ValidRequest_ReturnsSuccess()
+    {
+        const string email = "service-register@example.com";
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.RegisterAsync(
+                email,
+                Password,
+                "customer-web",
+                "https://localhost/Account/VerifyEmail"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, await fixture.CountCredentialsAsync(email));
+        Assert.Single(fixture.EmailSender.Sent);
+    }
+
+    [Fact]
+    public async Task RegisterService_DuplicateEmail_ReturnsOwnedFailure()
+    {
+        const string email = "service-duplicate@example.com";
+        await fixture.CreateCredentialAsync(email, Password);
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.RegisterAsync(
+                email,
+                Password,
+                "customer-web",
+                "https://localhost/Account/VerifyEmail"));
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(RegisterError.EmailAlreadyExists, error);
+        Assert.Equal(1, await fixture.CountCredentialsAsync(email));
+        Assert.Empty(fixture.EmailSender.Sent);
+    }
+
+    [Fact]
+    public async Task SendEmailVerificationService_MissingCredential_CompletesWithoutSideEffects()
+    {
+        await fixture.InvokeAuthServiceAsync(
+            service => service.SendEmailVerificationAsync(
+                Guid.NewGuid(),
+                "https://localhost/Account/VerifyEmail"));
+
+        Assert.Empty(fixture.EmailSender.Sent);
+    }
+
+    [Fact]
+    public async Task RegisterService_CancelledDatabaseOperation_PropagatesCancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.InvokeAuthServiceAsync(async service =>
+            {
+                _ = await service.RegisterAsync(
+                    "cancelled-registration@example.com",
+                    Password,
+                    "customer-web",
+                    "https://localhost/Account/VerifyEmail",
+                    cancellation.Token);
+            }));
+    }
+
+    #endregion
+
+    #region Razor registration
 
     [Fact]
     public async Task Register_ValidRequest_CreatesCredentialAndVerification()
@@ -48,12 +120,18 @@ public sealed class RegistrationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Register_DuplicateEmail_DisclosesConflictWithoutSideEffects()
+    public async Task Register_DuplicateEmail_DisclosesConflictWithoutAdditionalSideEffects()
     {
         const string email = "duplicate@example.com";
-        await fixture.CreateCredentialAsync(email, Password);
         var client = fixture.CreateClient();
         var returnUrl = fixture.CreateAuthorizationReturnUrl();
+
+        var firstResponse = await client.PostAsync(
+            "/Account/Register",
+            Form(("Email", email), ("Password", Password), ("ReturnUrl", returnUrl)));
+
+        await firstResponse.ShouldBe(HttpStatusCode.OK);
+        Assert.Single(fixture.EmailSender.Sent);
 
         var response = await client.PostAsync(
             "/Account/Register",
@@ -63,7 +141,7 @@ public sealed class RegistrationApiTests : IAsyncLifetime
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("An account with that email already exists.", body);
         Assert.Equal(1, await fixture.CountCredentialsAsync(email));
-        Assert.Empty(fixture.EmailSender.Sent);
+        Assert.Single(fixture.EmailSender.Sent);
     }
 
     [Fact]
@@ -100,6 +178,8 @@ public sealed class RegistrationApiTests : IAsyncLifetime
         Assert.NotNull(credential);
         Assert.Null(await fixture.GetEmailVerificationTokenAsync(credential.Id));
     }
+
+    #endregion
 
     private static FormUrlEncodedContent Form(params (string Name, string Value)[] fields) =>
         new(fields.Select(field => new KeyValuePair<string, string>(field.Name, field.Value)));
