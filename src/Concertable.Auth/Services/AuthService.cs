@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
+using Concertable.Kernel.Functional;
 using Concertable.Shared.Email.Application;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
@@ -36,18 +37,18 @@ internal sealed class AuthService : IAuthService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default)
+    public async Task<Option<ClaimsPrincipal>> LoginAsync(string email, string password, CancellationToken ct = default)
     {
         var credential = await context.Credentials.FirstOrDefaultAsync(c => c.Email == email, ct);
         if (credential is null || !passwordHasher.Verify(password, credential.PasswordHash))
-            return null;
+            return Option.None<ClaimsPrincipal>();
 
         if (!credential.IsEmailVerified)
-            return null;
+            return Option.None<ClaimsPrincipal>();
 
         var claims = new List<Claim> { new("sub", credential.Id.ToString()) };
         var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
-        return new ClaimsPrincipal(identity);
+        return Option.Some(new ClaimsPrincipal(identity));
     }
 
     public async Task<RegisterResult> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
@@ -74,10 +75,10 @@ internal sealed class AuthService : IAuthService
         return true;
     }
 
-    public async Task<string?> LogoutAsync(string? logoutId, CancellationToken ct = default)
+    public async Task<Option<string>> LogoutAsync(string? logoutId, CancellationToken ct = default)
     {
         var logoutContext = await interaction.GetLogoutContextAsync(logoutId);
-        return logoutContext?.PostLogoutRedirectUri;
+        return logoutContext?.PostLogoutRedirectUri.ToOption() ?? Option.None<string>();
     }
 
     public async Task SendEmailVerificationAsync(Guid userId, string verifyUrl, CancellationToken ct = default)

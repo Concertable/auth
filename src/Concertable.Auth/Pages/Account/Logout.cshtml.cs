@@ -1,4 +1,5 @@
 using Concertable.Auth.Services;
+using Concertable.Kernel.Functional;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -34,6 +35,6 @@ public sealed class LogoutModel : PageModel
     {
         await HttpContext.SignOutAsync(IdentityServerConstants.DefaultCookieAuthenticationScheme);
         var redirect = await authService.LogoutAsync(LogoutId, ct);
-        return Redirect(redirect ?? "/");
+        return Redirect(redirect.ValueOr("/"));
     }
 }
