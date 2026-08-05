@@ -206,6 +206,13 @@ public sealed class ApiFixture : IAsyncLifetime
             .SingleOrDefaultAsync();
     }
 
+    public async Task<bool> EmailVerificationTokenExistsAsync(string token)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+        return await context.EmailVerificationTokens.AnyAsync(candidate => candidate.Token == token);
+    }
+
     public async Task<string?> GetPasswordResetTokenAsync(Guid credentialId)
     {
         await using var scope = factory.Services.CreateAsyncScope();

@@ -18,6 +18,6 @@ public sealed class VerifyEmailModel : PageModel
     public async Task OnGetAsync(string? token, CancellationToken ct)
     {
         Success = !string.IsNullOrWhiteSpace(token)
-            && await authService.VerifyEmailAsync(token, ct);
+            && (await authService.VerifyEmailAsync(token, ct)).IsSuccess;
     }
 }
