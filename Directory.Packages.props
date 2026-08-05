@@ -10,13 +10,23 @@
     <PackageVersion Include="Duende.IdentityServer" Version="7.4.7" />
     <PackageVersion Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="11.0.1" />
+    <PackageVersion Include="Respawn" Version="7.0.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.1.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
 
   <!-- Shared platform from the org feed, pinned lockstep via ConcertablePlatformVersion above.
        Bump only to a version already published to the feed, else restore fails NU1101. -->
   <ItemGroup>
     <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Kernel" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.DataAccess.Application" Version="$(ConcertablePlatformVersion)" />

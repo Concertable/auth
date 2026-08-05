@@ -21,6 +21,7 @@
        Keep these as PackageReferences, never ProjectReferences, so Auth carves out standalone. -->
   <ItemGroup>
     <PackageReference Include="Concertable.Auth.Contracts" />
+    <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Shared" />
     <PackageReference Include="Concertable.Seed.Identity" />
     <PackageReference Include="Concertable.DataAccess.Application" />
@@ -33,6 +34,10 @@
     <PackageReference Include="Concertable.Shared.Geocoding.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Imaging.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Pdf.Infrastructure" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Concertable.Auth.IntegrationTests.Fixtures" />
   </ItemGroup>
 
 </Project>

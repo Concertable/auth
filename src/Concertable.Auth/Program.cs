@@ -184,3 +184,5 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+public sealed partial class Program;
