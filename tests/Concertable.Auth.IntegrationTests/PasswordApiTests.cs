@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.Auth.Services;
 using Xunit.Abstractions;
 
 namespace Concertable.Auth.IntegrationTests;
@@ -23,6 +24,152 @@ public sealed class PasswordApiTests : IAsyncLifetime
         fixture.DetachOutput();
         return Task.CompletedTask;
     }
+
+    #region Auth service
+
+    [Fact]
+    public async Task ChangePasswordService_ValidCurrentPassword_ReturnsSuccess()
+    {
+        const string email = "service-change@example.com";
+        var credentialId = await fixture.CreateCredentialAsync(email, Password);
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.ChangePasswordAsync(credentialId, Password, NewPassword));
+
+        Assert.True(result.IsSuccess);
+        var credential = await fixture.GetCredentialAsync(email, NewPassword);
+        Assert.NotNull(credential);
+        Assert.True(credential.PasswordMatches);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("incorrect")]
+    public async Task ChangePasswordService_CredentialRefusal_ReturnsOwnedFailure(string scenario)
+    {
+        const string email = "service-change-refusal@example.com";
+        var credentialId = scenario == "incorrect"
+            ? await fixture.CreateCredentialAsync(email, Password)
+            : Guid.NewGuid();
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.ChangePasswordAsync(
+                credentialId,
+                "WrongPassword123!",
+                NewPassword));
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(ChangePasswordError.CurrentPasswordIncorrect, error);
+        if (scenario == "incorrect")
+        {
+            var credential = await fixture.GetCredentialAsync(email, Password);
+            Assert.NotNull(credential);
+            Assert.True(credential.PasswordMatches);
+        }
+    }
+
+    [Fact]
+    public async Task ChangePasswordService_CancelledDatabaseOperation_PropagatesCancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.InvokeAuthServiceAsync(async service =>
+            {
+                _ = await service.ChangePasswordAsync(
+                    Guid.NewGuid(),
+                    Password,
+                    NewPassword,
+                    cancellation.Token);
+            }));
+    }
+
+    [Fact]
+    public async Task SendPasswordResetService_MissingCredential_CompletesWithoutSideEffects()
+    {
+        await fixture.InvokeAuthServiceAsync(
+            service => service.SendPasswordResetAsync(
+                "missing-reset@example.com",
+                "https://localhost/Account/ResetPassword"));
+
+        Assert.Empty(fixture.EmailSender.Sent);
+    }
+
+    [Fact]
+    public async Task ResetPasswordService_ValidToken_ReturnsSuccessAndConsumesToken()
+    {
+        const string email = "service-reset@example.com";
+        const string token = "service-valid-reset-token";
+        var credentialId = await fixture.CreateCredentialAsync(email, Password);
+        await fixture.AddPasswordResetTokenAsync(
+            credentialId,
+            token,
+            DateTime.UtcNow.AddHours(1));
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.ResetPasswordAsync(token, NewPassword));
+
+        Assert.True(result.IsSuccess);
+        var credential = await fixture.GetCredentialAsync(email, NewPassword);
+        Assert.NotNull(credential);
+        Assert.True(credential.PasswordMatches);
+        Assert.Null(await fixture.GetPasswordResetTokenAsync(credentialId));
+    }
+
+    [Theory]
+    [InlineData("unknown")]
+    [InlineData("expired")]
+    [InlineData("orphaned")]
+    public async Task ResetPasswordService_InvalidToken_ReturnsOwnedFailureWithoutMutation(string scenario)
+    {
+        var email = $"service-{scenario}-reset@example.com";
+        var credentialId = await fixture.CreateCredentialAsync(email, Password);
+        var token = $"service-{scenario}-reset-token";
+        if (scenario == "expired")
+        {
+            await fixture.AddPasswordResetTokenAsync(
+                credentialId,
+                token,
+                DateTime.UtcNow.AddMinutes(-1));
+        }
+        else if (scenario == "orphaned")
+        {
+            await fixture.AddPasswordResetTokenAsync(
+                Guid.NewGuid(),
+                token,
+                DateTime.UtcNow.AddHours(1));
+        }
+
+        var result = await fixture.InvokeAuthServiceAsync(
+            service => service.ResetPasswordAsync(token, NewPassword));
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal(ResetPasswordError.InvalidOrExpiredToken, error);
+        var credential = await fixture.GetCredentialAsync(email, Password);
+        Assert.NotNull(credential);
+        Assert.True(credential.PasswordMatches);
+        if (scenario != "unknown")
+            Assert.True(await fixture.PasswordResetTokenExistsAsync(token));
+    }
+
+    [Fact]
+    public async Task ResetPasswordService_CancelledDatabaseOperation_PropagatesCancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.InvokeAuthServiceAsync(async service =>
+            {
+                _ = await service.ResetPasswordAsync(
+                    "cancelled-reset-token",
+                    NewPassword,
+                    cancellation.Token);
+            }));
+    }
+
+    #endregion
 
     #region Change password
 
@@ -201,6 +348,8 @@ public sealed class PasswordApiTests : IAsyncLifetime
         var credential = await fixture.GetCredentialAsync(email, Password);
         Assert.NotNull(credential);
         Assert.True(credential.PasswordMatches);
+        if (scenario is "expired" or "orphaned")
+            Assert.True(await fixture.PasswordResetTokenExistsAsync(token));
     }
 
     #endregion

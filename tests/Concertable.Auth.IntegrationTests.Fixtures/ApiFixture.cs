@@ -223,6 +223,13 @@ public sealed class ApiFixture : IAsyncLifetime
             .SingleOrDefaultAsync();
     }
 
+    public async Task<bool> PasswordResetTokenExistsAsync(string token)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+        return await context.PasswordResetTokens.AnyAsync(candidate => candidate.Token == token);
+    }
+
     public async Task InvokeAuthServiceAsync(Func<IAuthService, Task> action)
     {
         await using var scope = factory.Services.CreateAsyncScope();
