@@ -29,9 +29,10 @@ public sealed class ResetPasswordModel : PageModel
             return Page();
         }
 
-        Success = await authService.ResetPasswordAsync(Token, NewPassword, ct);
-        if (!Success)
-            ErrorMessage = "Invalid or expired reset link.";
+        var result = await authService.ResetPasswordAsync(Token, NewPassword, ct);
+        Success = result.IsSuccess;
+        if (result.TryGetError(out var error))
+            ErrorMessage = error.Definition.Message;
 
         return Page();
     }

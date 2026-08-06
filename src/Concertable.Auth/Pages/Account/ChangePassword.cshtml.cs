@@ -32,9 +32,10 @@ public sealed class ChangePasswordModel : PageModel
             return Page();
         }
 
-        Success = await authService.ChangePasswordAsync(userId, CurrentPassword, NewPassword, ct);
-        if (!Success)
-            ErrorMessage = "Current password is incorrect.";
+        var result = await authService.ChangePasswordAsync(userId, CurrentPassword, NewPassword, ct);
+        Success = result.IsSuccess;
+        if (result.TryGetError(out var error))
+            ErrorMessage = error.Definition.Message;
 
         return Page();
     }
