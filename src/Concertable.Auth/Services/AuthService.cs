@@ -64,15 +64,15 @@ internal sealed class AuthService : IAuthService
         return UnitResult.Success<RegisterError>();
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    public async Task<UnitResult<ChangePasswordError>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
     {
         var credential = await context.Credentials.FindAsync([userId], ct);
         if (credential is null || !passwordHasher.Verify(currentPassword, credential.PasswordHash))
-            return false;
+            return UnitResult.Failure(ChangePasswordError.CurrentPasswordIncorrect);
 
         credential.SetPasswordHash(passwordHasher.Hash(newPassword));
         await context.SaveChangesAsync(ct);
-        return true;
+        return UnitResult.Success<ChangePasswordError>();
     }
 
     public async Task<Option<string>> LogoutAsync(string? logoutId, CancellationToken ct = default)
@@ -127,20 +127,21 @@ internal sealed class AuthService : IAuthService
                 $"Click here to reset your password: {link}. This link expires in 1 hour."), ct);
     }
 
-    public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
+    public async Task<UnitResult<ResetPasswordError>> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
     {
         var tokenEntity = await context.PasswordResetTokens
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
         if (tokenEntity is null || !tokenEntity.IsActive(timeProvider.GetUtcNow().UtcDateTime))
-            return false;
+            return UnitResult.Failure(ResetPasswordError.InvalidOrExpiredToken);
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
-        if (credential is null) return false;
+        if (credential is null)
+            return UnitResult.Failure(ResetPasswordError.InvalidOrExpiredToken);
 
         credential.SetPasswordHash(passwordHasher.Hash(newPassword));
         context.PasswordResetTokens.Remove(tokenEntity);
         await context.SaveChangesAsync(ct);
-        return true;
+        return UnitResult.Success<ResetPasswordError>();
     }
 }
