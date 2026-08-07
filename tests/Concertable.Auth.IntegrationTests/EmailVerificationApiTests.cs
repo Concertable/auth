@@ -52,7 +52,7 @@ public sealed class EmailVerificationApiTests : IAsyncLifetime
             service => service.VerifyEmailAsync("unknown-verification-token"));
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(VerifyEmailError.InvalidOrExpiredToken, error);
+        Assert.IsType<VerifyEmailError.InvalidOrExpiredToken>(error);
     }
 
     [Fact]

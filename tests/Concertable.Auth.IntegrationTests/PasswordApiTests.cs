@@ -59,7 +59,7 @@ public sealed class PasswordApiTests : IAsyncLifetime
                 NewPassword));
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(ChangePasswordError.CurrentPasswordIncorrect, error);
+        Assert.IsType<ChangePasswordError.CurrentPasswordIncorrect>(error);
         if (scenario == "incorrect")
         {
             var credential = await fixture.GetCredentialAsync(email, Password);
@@ -145,7 +145,7 @@ public sealed class PasswordApiTests : IAsyncLifetime
             service => service.ResetPasswordAsync(token, NewPassword));
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(ResetPasswordError.InvalidOrExpiredToken, error);
+        Assert.IsType<ResetPasswordError.InvalidOrExpiredToken>(error);
         var credential = await fixture.GetCredentialAsync(email, Password);
         Assert.NotNull(credential);
         Assert.True(credential.PasswordMatches);
