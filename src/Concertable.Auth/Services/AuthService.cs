@@ -54,7 +54,7 @@ internal sealed class AuthService : IAuthService
     public async Task<UnitResult<RegisterError>> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
     {
         if (await context.Credentials.AnyAsync(c => c.Email == email, ct))
-            return UnitResult.Failure(RegisterError.EmailAlreadyExists);
+            return UnitResult.Failure<RegisterError>(new RegisterError.EmailAlreadyExists());
 
         var credential = CredentialEntity.Create(email, passwordHasher.Hash(password), clientId);
         context.Credentials.Add(credential);
@@ -68,7 +68,7 @@ internal sealed class AuthService : IAuthService
     {
         var credential = await context.Credentials.FindAsync([userId], ct);
         if (credential is null || !passwordHasher.Verify(currentPassword, credential.PasswordHash))
-            return UnitResult.Failure(ChangePasswordError.CurrentPasswordIncorrect);
+            return UnitResult.Failure<ChangePasswordError>(new ChangePasswordError.CurrentPasswordIncorrect());
 
         credential.SetPasswordHash(passwordHasher.Hash(newPassword));
         await context.SaveChangesAsync(ct);
@@ -100,11 +100,11 @@ internal sealed class AuthService : IAuthService
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
         if (tokenEntity is null || !tokenEntity.IsActive(timeProvider.GetUtcNow().UtcDateTime))
-            return UnitResult.Failure(VerifyEmailError.InvalidOrExpiredToken);
+            return UnitResult.Failure<VerifyEmailError>(new VerifyEmailError.InvalidOrExpiredToken());
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
         if (credential is null)
-            return UnitResult.Failure(VerifyEmailError.InvalidOrExpiredToken);
+            return UnitResult.Failure<VerifyEmailError>(new VerifyEmailError.InvalidOrExpiredToken());
 
         credential.VerifyEmail();
         context.EmailVerificationTokens.Remove(tokenEntity);
@@ -133,11 +133,11 @@ internal sealed class AuthService : IAuthService
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
         if (tokenEntity is null || !tokenEntity.IsActive(timeProvider.GetUtcNow().UtcDateTime))
-            return UnitResult.Failure(ResetPasswordError.InvalidOrExpiredToken);
+            return UnitResult.Failure<ResetPasswordError>(new ResetPasswordError.InvalidOrExpiredToken());
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
         if (credential is null)
-            return UnitResult.Failure(ResetPasswordError.InvalidOrExpiredToken);
+            return UnitResult.Failure<ResetPasswordError>(new ResetPasswordError.InvalidOrExpiredToken());
 
         credential.SetPasswordHash(passwordHasher.Hash(newPassword));
         context.PasswordResetTokens.Remove(tokenEntity);

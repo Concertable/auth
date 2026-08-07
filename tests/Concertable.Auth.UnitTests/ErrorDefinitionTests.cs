@@ -8,26 +8,26 @@ public sealed class ErrorDefinitionTests
     public static TheoryData<IError, string, string, ErrorKind> Definitions => new()
     {
         {
-            RegisterError.EmailAlreadyExists,
-            "auth.email_already_exists",
+            new RegisterError.EmailAlreadyExists(),
+            "register.email_already_exists",
             "An account with that email already exists.",
             ErrorKind.Conflict
         },
         {
-            ChangePasswordError.CurrentPasswordIncorrect,
-            "auth.current_password_incorrect",
+            new ChangePasswordError.CurrentPasswordIncorrect(),
+            "change.password_current_password_incorrect",
             "Current password is incorrect.",
             ErrorKind.Unauthenticated
         },
         {
-            VerifyEmailError.InvalidOrExpiredToken,
-            "auth.verification_link_invalid_or_expired",
+            new VerifyEmailError.InvalidOrExpiredToken(),
+            "verify.email_invalid_or_expired_token",
             "This verification link is invalid or has expired.",
             ErrorKind.Invalid
         },
         {
-            ResetPasswordError.InvalidOrExpiredToken,
-            "auth.reset_link_invalid_or_expired",
+            new ResetPasswordError.InvalidOrExpiredToken(),
+            "reset.password_invalid_or_expired_token",
             "Invalid or expired reset link.",
             ErrorKind.Invalid
         }
