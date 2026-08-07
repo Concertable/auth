@@ -1,11 +1,16 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.Auth.Services;
 
-public sealed record VerifyEmailError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+public abstract partial record VerifyEmailError : IError
 {
-    public static readonly VerifyEmailError InvalidOrExpiredToken = new(
-        ErrorDefinition.Invalid(
-            "auth.verification_link_invalid_or_expired",
-            "This verification link is invalid or has expired."));
+    public ErrorDefinition Definition => this switch
+    {
+        InvalidOrExpiredToken => ErrorDefinition.Invalid<InvalidOrExpiredToken>(
+            "This verification link is invalid or has expired.")
+    };
+
+    public partial record InvalidOrExpiredToken;
 }

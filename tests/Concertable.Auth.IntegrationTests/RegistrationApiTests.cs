@@ -57,7 +57,7 @@ public sealed class RegistrationApiTests : IAsyncLifetime
                 "https://localhost/Account/VerifyEmail"));
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal(RegisterError.EmailAlreadyExists, error);
+        Assert.IsType<RegisterError.EmailAlreadyExists>(error);
         Assert.Equal(1, await fixture.CountCredentialsAsync(email));
         Assert.Empty(fixture.EmailSender.Sent);
     }
