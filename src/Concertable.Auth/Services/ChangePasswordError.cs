@@ -1,11 +1,16 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.Auth.Services;
 
-public sealed record ChangePasswordError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+public abstract partial record ChangePasswordError : IError
 {
-    public static readonly ChangePasswordError CurrentPasswordIncorrect = new(
-        ErrorDefinition.Unauthenticated(
-            "auth.current_password_incorrect",
-            "Current password is incorrect."));
+    public ErrorDefinition Definition => this switch
+    {
+        CurrentPasswordIncorrect => ErrorDefinition.Unauthenticated<CurrentPasswordIncorrect>(
+            "Current password is incorrect.")
+    };
+
+    public partial record CurrentPasswordIncorrect;
 }

@@ -1,11 +1,16 @@
 using Concertable.Kernel.Errors;
+using Dunet;
 
 namespace Concertable.Auth.Services;
 
-public sealed record RegisterError(ErrorDefinition Definition) : IError
+[Union(EnableImplicitConversions = false)]
+public abstract partial record RegisterError : IError
 {
-    public static readonly RegisterError EmailAlreadyExists = new(
-        ErrorDefinition.Conflict(
-            "auth.email_already_exists",
-            "An account with that email already exists."));
+    public ErrorDefinition Definition => this switch
+    {
+        EmailAlreadyExists => ErrorDefinition.Conflict<EmailAlreadyExists>(
+            "An account with that email already exists.")
+    };
+
+    public partial record EmailAlreadyExists;
 }
