@@ -1,5 +1,5 @@
 using Concertable.Auth.Services;
-using Concertable.Kernel.Functional;
+using Reunion;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;

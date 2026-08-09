@@ -1,5 +1,5 @@
 using Concertable.Auth.Services;
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 
 namespace Concertable.Auth.UnitTests;
 
