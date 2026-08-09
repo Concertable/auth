@@ -1,4 +1,4 @@
-using Concertable.Kernel.Errors;
+using Reunion.Errors;
 using Dunet;
 
 namespace Concertable.Auth.Services;
@@ -8,7 +8,7 @@ public abstract partial record ResetPasswordError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        InvalidOrExpiredToken => ErrorDefinition.Invalid<InvalidOrExpiredToken>(
+        InvalidOrExpiredToken => ErrorDefinition.For<ResetPasswordError>().Invalid<InvalidOrExpiredToken>(
             "Invalid or expired reset link.")
     };
 
