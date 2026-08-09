@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Concertable.Kernel.Functional;
+using Reunion;
 
 namespace Concertable.Auth.Services;
 
