@@ -8,7 +8,7 @@ public abstract partial record RegisterError : IError
 {
     public ErrorDefinition Definition => this switch
     {
-        EmailAlreadyExists => ErrorDefinition.For<RegisterError>().Conflict<EmailAlreadyExists>(
+        EmailAlreadyExists => ErrorDefinition.Conflict<EmailAlreadyExists>(
             "An account with that email already exists.")
     };
 

@@ -1,7 +1,7 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Data.Entities;
 using Concertable.Auth.Data.Factories;
-using Concertable.Auth.Services;
+using Concertable.Auth.Domain;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Identity;
 using Microsoft.EntityFrameworkCore;
