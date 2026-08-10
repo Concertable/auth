@@ -1,5 +1,5 @@
 using System.Net;
-using Concertable.Auth.Services;
+using Concertable.Auth.Domain;
 using Xunit.Abstractions;
 
 namespace Concertable.Auth.IntegrationTests;

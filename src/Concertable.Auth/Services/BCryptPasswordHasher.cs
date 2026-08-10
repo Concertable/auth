@@ -1,3 +1,5 @@
+using Concertable.Auth.Domain;
+
 namespace Concertable.Auth.Services;
 
 internal sealed class BCryptPasswordHasher : IPasswordHasher

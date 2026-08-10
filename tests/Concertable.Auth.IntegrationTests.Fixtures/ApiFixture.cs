@@ -1,5 +1,6 @@
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
+using Concertable.Auth.Domain;
 using Concertable.Auth.Services;
 using Concertable.DataAccess.Application;
 using Concertable.Messaging.Contracts;

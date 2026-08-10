@@ -1,4 +1,4 @@
-namespace Concertable.Auth.Services;
+namespace Concertable.Auth.Domain;
 
 public interface IPasswordHasher
 {
