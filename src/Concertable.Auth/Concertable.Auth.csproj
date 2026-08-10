@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Concertable.Auth.IntegrationTests.Fixtures" />
+    <InternalsVisibleTo Include="Concertable.Auth.UnitTests" />
   </ItemGroup>
 
 </Project>

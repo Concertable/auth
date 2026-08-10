@@ -1,3 +1,4 @@
+using Concertable.Auth.Domain;
 using Concertable.Auth.Services;
 using Reunion.Errors;
 

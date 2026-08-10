@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Concertable.Auth.Domain;
 using Reunion;
 
 namespace Concertable.Auth.Services;
