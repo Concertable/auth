@@ -1,3 +1,4 @@
+using Concertable.Auth.Hosting;
 using Concertable.B2B.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
