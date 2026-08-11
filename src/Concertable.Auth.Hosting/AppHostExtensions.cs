@@ -3,7 +3,9 @@ using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Azure;
 using Microsoft.Extensions.Configuration;
 
-public static class AuthAppHostExtensions
+namespace Concertable.Auth.Hosting;
+
+public static class AppHostExtensions
 {
     public static IResourceBuilder<ProjectResource> AddAuth<TProject>(
         this IDistributedApplicationBuilder builder,
