@@ -1,3 +1,5 @@
+namespace Concertable.Auth.Hosting;
+
 public static class AuthConstants
 {
     public const string Database = "AuthDb";
