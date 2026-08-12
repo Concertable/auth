@@ -23,10 +23,10 @@ internal sealed class PasswordResetTokenEntity : IIdEntity
             throw new DomainException("Password reset token belongs to another credential.");
 
         if (utcNow >= Expires)
-            return UnitResult.Failure<ResetPasswordError>(new ResetPasswordError.InvalidOrExpiredToken());
+            return new ResetPasswordError.InvalidOrExpiredToken();
 
         credential.ResetPassword(newPassword, passwordHasher);
-        return UnitResult.Success<ResetPasswordError>();
+        return new Success();
     }
 
     public static PasswordResetTokenEntity Create(Guid credentialId, string token, DateTime expires) => new()
