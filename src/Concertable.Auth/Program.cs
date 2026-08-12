@@ -4,6 +4,7 @@ using Concertable.Auth.Contracts.Events;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Events;
 using Concertable.Auth.Data.Seeders;
+using Concertable.Auth.Domain;
 using Concertable.Auth.Extensions;
 using Concertable.Auth.Services;
 using Concertable.Auth.Settings;
@@ -184,3 +185,5 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+public sealed partial class Program;
