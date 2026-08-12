@@ -37,15 +37,10 @@ public sealed class RegisterModel : PageModel
         var verifyUrl = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail";
         var result = await authService.RegisterAsync(Email, Password, clientId, verifyUrl, ct);
 
-        switch (result)
-        {
-            case RegisterResult.Success:
-                Submitted = true;
-                break;
-            case RegisterResult.EmailAlreadyExists:
-                ErrorMessage = "An account with that email already exists.";
-                break;
-        }
+        if (result.TryGetError(out var error))
+            ErrorMessage = error.Definition.Message;
+        else
+            Submitted = true;
 
         return Page();
     }

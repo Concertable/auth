@@ -10,17 +10,21 @@
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="Duende.IdentityServer" />
     <PackageReference Include="Duende.IdentityServer.EntityFramework" />
+    <PackageReference Include="Dunet" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Refit.HttpClientFactory" />
+    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
   <!-- Shared platform + Auth.Contracts as feed packages (versions in Directory.Packages.props).
        Keep these as PackageReferences, never ProjectReferences, so Auth carves out standalone. -->
   <ItemGroup>
     <PackageReference Include="Concertable.Auth.Contracts" />
+    <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Shared" />
     <PackageReference Include="Concertable.Seed.Identity" />
     <PackageReference Include="Concertable.DataAccess.Application" />
@@ -33,6 +37,11 @@
     <PackageReference Include="Concertable.Shared.Geocoding.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Imaging.Infrastructure" />
     <PackageReference Include="Concertable.Shared.Pdf.Infrastructure" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Concertable.Auth.IntegrationTests.Fixtures" />
+    <InternalsVisibleTo Include="Concertable.Auth.UnitTests" />
   </ItemGroup>
 
 </Project>

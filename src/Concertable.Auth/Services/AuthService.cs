@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
+using Concertable.Auth.Domain;
+using Reunion;
 using Concertable.Shared.Email.Application;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
@@ -36,13 +38,10 @@ internal sealed class AuthService : IAuthService
         this.timeProvider = timeProvider;
     }
 
-    public async Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default)
+    public async Task<Option<ClaimsPrincipal>> LoginAsync(string email, string password, CancellationToken ct = default)
     {
         var credential = await context.Credentials.FirstOrDefaultAsync(c => c.Email == email, ct);
-        if (credential is null || !passwordHasher.Verify(password, credential.PasswordHash))
-            return null;
-
-        if (!credential.IsEmailVerified)
+        if (credential is null || !credential.CanAuthenticate(password, passwordHasher))
             return null;
 
         var claims = new List<Claim> { new("sub", credential.Id.ToString()) };
@@ -50,31 +49,34 @@ internal sealed class AuthService : IAuthService
         return new ClaimsPrincipal(identity);
     }
 
-    public async Task<RegisterResult> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
+    public async Task<UnitResult<RegisterError>> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
     {
         if (await context.Credentials.AnyAsync(c => c.Email == email, ct))
-            return RegisterResult.EmailAlreadyExists;
+            return new RegisterError.EmailAlreadyExists();
 
         var credential = CredentialEntity.Create(email, passwordHasher.Hash(password), clientId);
         context.Credentials.Add(credential);
         await context.SaveChangesAsync(ct);
 
         await SendEmailVerificationAsync(credential.Id, verifyUrl, ct);
-        return RegisterResult.Success;
+        return new Success();
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    public async Task<UnitResult<ChangePasswordError>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
     {
         var credential = await context.Credentials.FindAsync([userId], ct);
-        if (credential is null || !passwordHasher.Verify(currentPassword, credential.PasswordHash))
-            return false;
+        if (credential is null)
+            return new ChangePasswordError.CurrentPasswordIncorrect();
 
-        credential.SetPasswordHash(passwordHasher.Hash(newPassword));
+        var result = credential.ChangePassword(currentPassword, newPassword, passwordHasher);
+        if (result.IsFailure)
+            return result;
+
         await context.SaveChangesAsync(ct);
-        return true;
+        return result;
     }
 
-    public async Task<string?> LogoutAsync(string? logoutId, CancellationToken ct = default)
+    public async Task<Option<string>> LogoutAsync(string? logoutId, CancellationToken ct = default)
     {
         var logoutContext = await interaction.GetLogoutContextAsync(logoutId);
         return logoutContext?.PostLogoutRedirectUri;
@@ -93,21 +95,25 @@ internal sealed class AuthService : IAuthService
             emailSender.SendVerificationAsync(credential.Email, token, verifyUrl, ct), ct);
     }
 
-    public async Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default)
+    public async Task<UnitResult<VerifyEmailError>> VerifyEmailAsync(string token, CancellationToken ct = default)
     {
         var tokenEntity = await context.EmailVerificationTokens
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
-        if (tokenEntity is null || !tokenEntity.IsActive(timeProvider.GetUtcNow().UtcDateTime))
-            return false;
+        if (tokenEntity is null)
+            return new VerifyEmailError.InvalidOrExpiredToken();
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
-        if (credential is null) return false;
+        if (credential is null)
+            return new VerifyEmailError.InvalidOrExpiredToken();
 
-        credential.VerifyEmail();
+        var result = tokenEntity.Verify(credential, timeProvider.GetUtcNow().UtcDateTime);
+        if (result.IsFailure)
+            return result;
+
         context.EmailVerificationTokens.Remove(tokenEntity);
         await context.SaveChangesAsync(ct);
-        return true;
+        return result;
     }
 
     public async Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
@@ -125,20 +131,28 @@ internal sealed class AuthService : IAuthService
                 $"Click here to reset your password: {link}. This link expires in 1 hour."), ct);
     }
 
-    public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
+    public async Task<UnitResult<ResetPasswordError>> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
     {
         var tokenEntity = await context.PasswordResetTokens
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
-        if (tokenEntity is null || !tokenEntity.IsActive(timeProvider.GetUtcNow().UtcDateTime))
-            return false;
+        if (tokenEntity is null)
+            return new ResetPasswordError.InvalidOrExpiredToken();
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
-        if (credential is null) return false;
+        if (credential is null)
+            return new ResetPasswordError.InvalidOrExpiredToken();
 
-        credential.SetPasswordHash(passwordHasher.Hash(newPassword));
+        var result = tokenEntity.ResetPassword(
+            credential,
+            newPassword,
+            passwordHasher,
+            timeProvider.GetUtcNow().UtcDateTime);
+        if (result.IsFailure)
+            return result;
+
         context.PasswordResetTokens.Remove(tokenEntity);
         await context.SaveChangesAsync(ct);
-        return true;
+        return result;
     }
 }
