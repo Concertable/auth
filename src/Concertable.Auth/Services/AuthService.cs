@@ -42,31 +42,31 @@ internal sealed class AuthService : IAuthService
     {
         var credential = await context.Credentials.FirstOrDefaultAsync(c => c.Email == email, ct);
         if (credential is null || !credential.CanAuthenticate(password, passwordHasher))
-            return Option.None<ClaimsPrincipal>();
+            return null;
 
         var claims = new List<Claim> { new("sub", credential.Id.ToString()) };
         var identity = new ClaimsIdentity(claims, IdentityServerConstants.DefaultCookieAuthenticationScheme);
-        return Option.Some(new ClaimsPrincipal(identity));
+        return new ClaimsPrincipal(identity);
     }
 
     public async Task<UnitResult<RegisterError>> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default)
     {
         if (await context.Credentials.AnyAsync(c => c.Email == email, ct))
-            return UnitResult.Failure<RegisterError>(new RegisterError.EmailAlreadyExists());
+            return new RegisterError.EmailAlreadyExists();
 
         var credential = CredentialEntity.Create(email, passwordHasher.Hash(password), clientId);
         context.Credentials.Add(credential);
         await context.SaveChangesAsync(ct);
 
         await SendEmailVerificationAsync(credential.Id, verifyUrl, ct);
-        return UnitResult.Success<RegisterError>();
+        return new Success();
     }
 
     public async Task<UnitResult<ChangePasswordError>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
     {
         var credential = await context.Credentials.FindAsync([userId], ct);
         if (credential is null)
-            return UnitResult.Failure<ChangePasswordError>(new ChangePasswordError.CurrentPasswordIncorrect());
+            return new ChangePasswordError.CurrentPasswordIncorrect();
 
         var result = credential.ChangePassword(currentPassword, newPassword, passwordHasher);
         if (result.IsFailure)
@@ -79,7 +79,7 @@ internal sealed class AuthService : IAuthService
     public async Task<Option<string>> LogoutAsync(string? logoutId, CancellationToken ct = default)
     {
         var logoutContext = await interaction.GetLogoutContextAsync(logoutId);
-        return logoutContext?.PostLogoutRedirectUri.ToOption() ?? Option.None<string>();
+        return logoutContext?.PostLogoutRedirectUri;
     }
 
     public async Task SendEmailVerificationAsync(Guid userId, string verifyUrl, CancellationToken ct = default)
@@ -101,11 +101,11 @@ internal sealed class AuthService : IAuthService
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
         if (tokenEntity is null)
-            return UnitResult.Failure<VerifyEmailError>(new VerifyEmailError.InvalidOrExpiredToken());
+            return new VerifyEmailError.InvalidOrExpiredToken();
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
         if (credential is null)
-            return UnitResult.Failure<VerifyEmailError>(new VerifyEmailError.InvalidOrExpiredToken());
+            return new VerifyEmailError.InvalidOrExpiredToken();
 
         var result = tokenEntity.Verify(credential, timeProvider.GetUtcNow().UtcDateTime);
         if (result.IsFailure)
@@ -137,11 +137,11 @@ internal sealed class AuthService : IAuthService
             .FirstOrDefaultAsync(t => t.Token == token, ct);
 
         if (tokenEntity is null)
-            return UnitResult.Failure<ResetPasswordError>(new ResetPasswordError.InvalidOrExpiredToken());
+            return new ResetPasswordError.InvalidOrExpiredToken();
 
         var credential = await context.Credentials.FindAsync([tokenEntity.CredentialId], ct);
         if (credential is null)
-            return UnitResult.Failure<ResetPasswordError>(new ResetPasswordError.InvalidOrExpiredToken());
+            return new ResetPasswordError.InvalidOrExpiredToken();
 
         var result = tokenEntity.ResetPassword(
             credential,

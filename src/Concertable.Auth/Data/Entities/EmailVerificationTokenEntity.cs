@@ -19,10 +19,10 @@ internal sealed class EmailVerificationTokenEntity : IIdEntity
             throw new DomainException("Email verification token belongs to another credential.");
 
         if (utcNow >= Expires)
-            return UnitResult.Failure<VerifyEmailError>(new VerifyEmailError.InvalidOrExpiredToken());
+            return new VerifyEmailError.InvalidOrExpiredToken();
 
         credential.VerifyEmail();
-        return UnitResult.Success<VerifyEmailError>();
+        return new Success();
     }
 
     public static EmailVerificationTokenEntity Create(Guid credentialId, string token, DateTime expires) => new()
