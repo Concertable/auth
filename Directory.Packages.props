@@ -17,7 +17,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="11.0.1" />
-    <PackageVersion Include="Reunion" Version="0.1.0-alpha.1" />
+    <PackageVersion Include="Reunion" Version="0.1.0-alpha.2" />
     <PackageVersion Include="Reunion.Errors" Version="0.1.0-alpha.2" />
     <PackageVersion Include="Respawn" Version="7.0.0" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.1.0" />

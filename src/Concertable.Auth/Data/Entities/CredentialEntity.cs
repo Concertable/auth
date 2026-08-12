@@ -40,10 +40,10 @@ internal sealed class CredentialEntity : IGuidEntity, IEventRaiser
         IPasswordHasher passwordHasher)
     {
         if (!passwordHasher.Verify(currentPassword, PasswordHash))
-            return UnitResult.Failure<ChangePasswordError>(new ChangePasswordError.CurrentPasswordIncorrect());
+            return new ChangePasswordError.CurrentPasswordIncorrect();
 
         PasswordHash = passwordHasher.Hash(newPassword);
-        return UnitResult.Success<ChangePasswordError>();
+        return new Success();
     }
 
     public void VerifyEmail() => IsEmailVerified = true;
