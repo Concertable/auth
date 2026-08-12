@@ -1,20 +1,20 @@
 using System.Security.Claims;
+using Concertable.Auth.Domain;
+using Reunion;
 
 namespace Concertable.Auth.Services;
 
 public interface IAuthService
 {
-    Task<ClaimsPrincipal?> LoginAsync(string email, string password, CancellationToken ct = default);
-    Task<string?> LogoutAsync(string? logoutId, CancellationToken ct = default);
+    Task<Option<ClaimsPrincipal>> LoginAsync(string email, string password, CancellationToken ct = default);
+    Task<Option<string>> LogoutAsync(string? logoutId, CancellationToken ct = default);
 
-    Task<RegisterResult> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default);
-    Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default);
+    Task<UnitResult<RegisterError>> RegisterAsync(string email, string password, string clientId, string verifyUrl, CancellationToken ct = default);
+    Task<UnitResult<ChangePasswordError>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default);
 
     Task SendEmailVerificationAsync(Guid userId, string verifyUrl, CancellationToken ct = default);
-    Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default);
+    Task<UnitResult<VerifyEmailError>> VerifyEmailAsync(string token, CancellationToken ct = default);
 
     Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default);
-    Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default);
+    Task<UnitResult<ResetPasswordError>> ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default);
 }
-
-public enum RegisterResult { Success, EmailAlreadyExists }
