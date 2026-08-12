@@ -1,5 +1,7 @@
 using Concertable.Auth.Data.Events;
+using Concertable.Auth.Domain;
 using Concertable.Kernel;
+using Reunion;
 
 namespace Concertable.Auth.Data.Entities;
 
@@ -29,7 +31,23 @@ internal sealed class CredentialEntity : IGuidEntity, IEventRaiser
         return entity;
     }
 
+    public bool CanAuthenticate(string password, IPasswordHasher passwordHasher) =>
+        IsEmailVerified && passwordHasher.Verify(password, PasswordHash);
+
+    public UnitResult<ChangePasswordError> ChangePassword(
+        string currentPassword,
+        string newPassword,
+        IPasswordHasher passwordHasher)
+    {
+        if (!passwordHasher.Verify(currentPassword, PasswordHash))
+            return new ChangePasswordError.CurrentPasswordIncorrect();
+
+        PasswordHash = passwordHasher.Hash(newPassword);
+        return new Success();
+    }
+
     public void VerifyEmail() => IsEmailVerified = true;
 
-    public void SetPasswordHash(string hash) => PasswordHash = hash;
+    public void ResetPassword(string password, IPasswordHasher passwordHasher) =>
+        PasswordHash = passwordHasher.Hash(password);
 }
