@@ -48,7 +48,7 @@ public sealed class ApiFixture : IAsyncLifetime
 
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Testing");
+            builder.UseEnvironment(HostEnvironments.Integration);
             builder.ConfigureTestServices(services =>
             {
                 services.AddXunitLogging(outputAccessor);
@@ -246,8 +246,8 @@ public sealed class ApiFixture : IAsyncLifetime
 
     private void ConfigureEnvironment()
     {
-        SetEnvironment("DOTNET_ENVIRONMENT", "Testing");
-        SetEnvironment("ASPNETCORE_ENVIRONMENT", "Testing");
+        SetEnvironment("DOTNET_ENVIRONMENT", HostEnvironments.Integration);
+        SetEnvironment("ASPNETCORE_ENVIRONMENT", HostEnvironments.Integration);
         SetEnvironment("ConnectionStrings__AuthDb", sqlFixture.ConnectionString);
         SetEnvironment("ConnectionStrings__B2BDb", sqlFixture.ConnectionString);
         SetEnvironment(
@@ -261,7 +261,7 @@ public sealed class ApiFixture : IAsyncLifetime
         ConfigureSpaClients();
     }
 
-    // Testing has no appsettings.Testing.json; supply the localhost SpaClients the login/logout/register flows validate redirect URIs against.
+    // Integration has no appsettings.Integration.json; supply the localhost SpaClients the login/logout/register flows validate redirect URIs against.
     private void ConfigureSpaClients()
     {
         var section = SpaClientSettings.SectionName.Replace(":", "__");
