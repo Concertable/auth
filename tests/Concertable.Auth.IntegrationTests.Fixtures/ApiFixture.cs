@@ -30,8 +30,10 @@ namespace Concertable.Auth.IntegrationTests.Fixtures;
 
 public sealed record CredentialState(Guid Id, bool IsEmailVerified, bool PasswordMatches);
 
-public sealed class ApiFixture : IAsyncLifetime
+public class ApiFixture : IAsyncLifetime
 {
+    protected virtual string EnvironmentName => "Testing";
+
     private readonly XunitOutputAccessor outputAccessor = new();
     private readonly Dictionary<string, string?> previousEnvironment = new();
     private SqlFixture sqlFixture = null!;
@@ -50,7 +52,7 @@ public sealed class ApiFixture : IAsyncLifetime
 
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("E2E");
+            builder.UseEnvironment(EnvironmentName);
             builder.ConfigureTestServices(services =>
             {
                 services.AddLogging(logging =>
@@ -271,8 +273,8 @@ public sealed class ApiFixture : IAsyncLifetime
 
     private void ConfigureEnvironment()
     {
-        SetEnvironment("DOTNET_ENVIRONMENT", "E2E");
-        SetEnvironment("ASPNETCORE_ENVIRONMENT", "E2E");
+        SetEnvironment("DOTNET_ENVIRONMENT", EnvironmentName);
+        SetEnvironment("ASPNETCORE_ENVIRONMENT", EnvironmentName);
         SetEnvironment("ConnectionStrings__AuthDb", sqlFixture.ConnectionString);
         SetEnvironment("ConnectionStrings__B2BDb", sqlFixture.ConnectionString);
         SetEnvironment(
@@ -283,6 +285,18 @@ public sealed class ApiFixture : IAsyncLifetime
         SetEnvironment("ServiceAuth__B2BClientSecret", "b2b-test-secret");
         SetEnvironment("ServiceAuth__CustomerClientSecret", "customer-test-secret");
         SetEnvironment("ServiceAuth__AuthClientSecret", "auth-test-secret");
+        ConfigureSpaClients();
+    }
+
+    // Testing has no appsettings.Testing.json; supply the localhost SpaClients the login/logout/register flows validate redirect URIs against.
+    private void ConfigureSpaClients()
+    {
+        foreach (var (name, port) in new[] { ("Customer", 5174), ("Venue", 5175), ("Artist", 5176) })
+        {
+            SetEnvironment($"Auth__SpaClients__{name}__RedirectUri", $"https://localhost:{port}/auth/callback");
+            SetEnvironment($"Auth__SpaClients__{name}__PostLogoutRedirectUri", $"https://localhost:{port}");
+            SetEnvironment($"Auth__SpaClients__{name}__AllowedCorsOrigins__0", $"https://localhost:{port}");
+        }
     }
 
     private void SetEnvironment(string name, string value)
