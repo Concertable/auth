@@ -1,3 +1,5 @@
+using Concertable.Testing.Integration;
+
 namespace Concertable.Auth.IntegrationTests.Fixtures;
 
 /// <summary>
@@ -8,5 +10,5 @@ namespace Concertable.Auth.IntegrationTests.Fixtures;
 /// </summary>
 public sealed class E2ETokenApiFixture : ApiFixture
 {
-    protected override string EnvironmentName => "E2E";
+    protected override string EnvironmentName => TestEnvironments.E2E;
 }
