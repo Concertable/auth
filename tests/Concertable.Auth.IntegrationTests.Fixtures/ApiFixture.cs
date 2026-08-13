@@ -28,10 +28,8 @@ namespace Concertable.Auth.IntegrationTests.Fixtures;
 
 public sealed record CredentialState(Guid Id, bool IsEmailVerified, bool PasswordMatches);
 
-public class ApiFixture : IAsyncLifetime
+public sealed class ApiFixture : IAsyncLifetime
 {
-    protected virtual string EnvironmentName => TestEnvironments.Testing;
-
     private readonly XunitOutputAccessor outputAccessor = new();
     private readonly Dictionary<string, string?> previousEnvironment = new();
     private SqlFixture sqlFixture = null!;
@@ -50,7 +48,7 @@ public class ApiFixture : IAsyncLifetime
 
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment(EnvironmentName);
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 services.AddXunitLogging(outputAccessor);
@@ -248,8 +246,8 @@ public class ApiFixture : IAsyncLifetime
 
     private void ConfigureEnvironment()
     {
-        SetEnvironment("DOTNET_ENVIRONMENT", EnvironmentName);
-        SetEnvironment("ASPNETCORE_ENVIRONMENT", EnvironmentName);
+        SetEnvironment("DOTNET_ENVIRONMENT", "Testing");
+        SetEnvironment("ASPNETCORE_ENVIRONMENT", "Testing");
         SetEnvironment("ConnectionStrings__AuthDb", sqlFixture.ConnectionString);
         SetEnvironment("ConnectionStrings__B2BDb", sqlFixture.ConnectionString);
         SetEnvironment(
