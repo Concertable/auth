@@ -1,9 +1,10 @@
+using Concertable.Auth.Contracts;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
 using Concertable.Auth.Domain;
 using Concertable.Auth.Services;
+using Concertable.Auth.Settings;
 using Concertable.DataAccess.Application;
-using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Shared.Email.Application;
 using Concertable.Testing;
@@ -11,7 +12,6 @@ using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Stores;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,8 +21,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,7 +30,7 @@ public sealed record CredentialState(Guid Id, bool IsEmailVerified, bool Passwor
 
 public class ApiFixture : IAsyncLifetime
 {
-    protected virtual string EnvironmentName => "Testing";
+    protected virtual string EnvironmentName => TestEnvironments.Testing;
 
     private readonly XunitOutputAccessor outputAccessor = new();
     private readonly Dictionary<string, string?> previousEnvironment = new();
@@ -55,34 +53,11 @@ public class ApiFixture : IAsyncLifetime
             builder.UseEnvironment(EnvironmentName);
             builder.ConfigureTestServices(services =>
             {
-                services.AddLogging(logging =>
-                {
-                    logging.ClearProviders();
-                    logging.AddProvider(new XunitLoggerProvider(outputAccessor));
-                    logging.SetMinimumLevel(LogLevel.Information);
-                });
-
-                var receivers = services
-                    .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
-                        && descriptor.ImplementationType?.Name == "AzureServiceBusReceiver")
-                    .ToList();
-                foreach (var receiver in receivers)
-                    services.Remove(receiver);
-
+                services.AddXunitLogging(outputAccessor);
+                services.RemoveAzureServiceBus();
                 services.RemoveAll<IDevSeeder>();
-                services.Replace(ServiceDescriptor.Singleton<IBusTransport, TestBusTransport>());
                 services.Replace(ServiceDescriptor.Singleton<IEmailSender>(EmailSender));
-
-                services.PostConfigure<AuthenticationOptions>(options =>
-                {
-                    options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
-                    options.DefaultChallengeScheme = TestAuthHandler.SchemeName;
-                    options.DefaultScheme = TestAuthHandler.SchemeName;
-                });
-                services.AddAuthentication()
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                        TestAuthHandler.SchemeName,
-                        _ => { });
+                services.AddTestAuthentication();
 
                 services.PostConfigure<RazorPagesOptions>(options =>
                     options.Conventions.ConfigureFilter(new IgnoreAntiforgeryTokenAttribute()));
@@ -127,7 +102,7 @@ public class ApiFixture : IAsyncLifetime
     }
 
     public string CreateAuthorizationReturnUrl() =>
-        "/connect/authorize/callback?client_id=customer-web"
+        $"/connect/authorize/callback?client_id={ClientIds.CustomerWeb}"
         + "&redirect_uri=https%3A%2F%2Flocalhost%3A5174%2Fauth%2Fcallback"
         + "&response_type=code&scope=openid&state=test-state&nonce=test-nonce"
         + "&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -265,7 +240,7 @@ public class ApiFixture : IAsyncLifetime
         var store = scope.ServiceProvider.GetRequiredService<IMessageStore<LogoutMessage>>();
         var message = new LogoutMessage
         {
-            ClientId = "customer-web",
+            ClientId = ClientIds.CustomerWeb,
             PostLogoutRedirectUri = postLogoutRedirectUri
         };
         return await store.WriteAsync(new Message<LogoutMessage>(message, DateTime.UtcNow));
@@ -291,11 +266,18 @@ public class ApiFixture : IAsyncLifetime
     // Testing has no appsettings.Testing.json; supply the localhost SpaClients the login/logout/register flows validate redirect URIs against.
     private void ConfigureSpaClients()
     {
-        foreach (var (name, port) in new[] { ("Customer", 5174), ("Venue", 5175), ("Artist", 5176) })
+        var section = SpaClientSettings.SectionName.Replace(":", "__");
+        (string Client, int Port)[] clients =
+        [
+            (nameof(SpaClientSettings.Customer), 5174),
+            (nameof(SpaClientSettings.Venue), 5175),
+            (nameof(SpaClientSettings.Artist), 5176),
+        ];
+        foreach (var (client, port) in clients)
         {
-            SetEnvironment($"Auth__SpaClients__{name}__RedirectUri", $"https://localhost:{port}/auth/callback");
-            SetEnvironment($"Auth__SpaClients__{name}__PostLogoutRedirectUri", $"https://localhost:{port}");
-            SetEnvironment($"Auth__SpaClients__{name}__AllowedCorsOrigins__0", $"https://localhost:{port}");
+            SetEnvironment($"{section}__{client}__{nameof(WebClientSettings.RedirectUri)}", $"https://localhost:{port}/auth/callback");
+            SetEnvironment($"{section}__{client}__{nameof(WebClientSettings.PostLogoutRedirectUri)}", $"https://localhost:{port}");
+            SetEnvironment($"{section}__{client}__{nameof(WebClientSettings.AllowedCorsOrigins)}__0", $"https://localhost:{port}");
         }
     }
 
