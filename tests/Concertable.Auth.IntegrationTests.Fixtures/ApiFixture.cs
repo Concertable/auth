@@ -8,6 +8,7 @@ using Concertable.DataAccess.Application;
 using Concertable.Seed.Shared;
 using Concertable.Shared.Email.Application;
 using Concertable.Testing;
+using Concertable.Kernel;
 using Concertable.Testing.Integration;
 using Concertable.Testing.Integration.Logging;
 using Duende.IdentityServer.Models;
