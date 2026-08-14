@@ -84,10 +84,10 @@ builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>
 {
     opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"]
-        ?? (builder.Environment.IsEnvironment("Integration") ? null!
+        ?? (builder.Environment.IsIntegration() ? null!
             : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
     opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"]
-        ?? (builder.Environment.IsEnvironment("Integration") ? null!
+        ?? (builder.Environment.IsIntegration() ? null!
             : throw new InvalidOperationException("ServiceAuth:AuthClientId is required."));
     if (builder.Configuration["ServiceAuth:AuthClientSecret"] is string clientSecret)
         opts.ClientSecret = clientSecret;
@@ -108,7 +108,7 @@ builder.Services.AddAzureServiceBusTransport(
     opts =>
     {
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
-            ?? (builder.Environment.IsEnvironment("Integration") ? null!
+            ?? (builder.Environment.IsIntegration() ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = "concertable-auth";
     },
@@ -139,7 +139,7 @@ var clients = new List<Client>(Config.WebClients(spaClient))
         RequireSecret("ServiceAuth:AuthClientSecret"),
         "user:claims"),
 };
-if (builder.Environment.IsEnvironment("E2E"))
+if (builder.Environment.IsE2E())
     clients.Add(Config.TestClient);
 
 var publicUrl = builder.Configuration["Auth:PublicUrl"];
@@ -163,7 +163,7 @@ var isBuilder = builder.Services.AddIdentityServer(options =>
     })
     .AddDeveloperSigningCredential();
 
-if (builder.Environment.IsEnvironment("E2E"))
+if (builder.Environment.IsE2E())
     isBuilder.AddResourceOwnerValidator<ResourceOwnerPasswordValidator>();
 
 var app = builder.Build();
