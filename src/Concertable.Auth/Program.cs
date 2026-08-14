@@ -84,10 +84,10 @@ builder.Services.AddMemoryCache();
 builder.Services.AddClientCredentials(opts =>
 {
     opts.Authority = builder.Configuration["Auth:Authority"] ?? builder.Configuration["services:auth:https:0"]
-        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+        ?? (builder.Environment.IsEnvironment("Integration") ? null!
             : throw new InvalidOperationException("Auth:Authority is required (no explicit key and no service-discovery fallback)."));
     opts.ClientId = builder.Configuration["ServiceAuth:AuthClientId"]
-        ?? (builder.Environment.IsEnvironment("Testing") ? null!
+        ?? (builder.Environment.IsEnvironment("Integration") ? null!
             : throw new InvalidOperationException("ServiceAuth:AuthClientId is required."));
     if (builder.Configuration["ServiceAuth:AuthClientSecret"] is string clientSecret)
         opts.ClientSecret = clientSecret;
@@ -108,7 +108,7 @@ builder.Services.AddAzureServiceBusTransport(
     opts =>
     {
         opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
-            ?? (builder.Environment.IsEnvironment("Testing") ? null!
+            ?? (builder.Environment.IsEnvironment("Integration") ? null!
                 : throw new InvalidOperationException("Connection string 'asb' is required."));
         opts.ServiceName = "concertable-auth";
     },
