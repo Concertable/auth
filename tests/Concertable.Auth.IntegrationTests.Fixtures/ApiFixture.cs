@@ -13,6 +13,7 @@ using Concertable.Testing.Integration.Logging;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Stores;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -48,7 +49,7 @@ public sealed class ApiFixture : IAsyncLifetime
 
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment(HostEnvironments.Integration);
+            builder.UseEnvironment(Environments.Integration);
             builder.ConfigureTestServices(services =>
             {
                 services.AddXunitLogging(outputAccessor);
@@ -246,8 +247,8 @@ public sealed class ApiFixture : IAsyncLifetime
 
     private void ConfigureEnvironment()
     {
-        SetEnvironment("DOTNET_ENVIRONMENT", HostEnvironments.Integration);
-        SetEnvironment("ASPNETCORE_ENVIRONMENT", HostEnvironments.Integration);
+        SetEnvironment("DOTNET_ENVIRONMENT", Environments.Integration);
+        SetEnvironment("ASPNETCORE_ENVIRONMENT", Environments.Integration);
         SetEnvironment("ConnectionStrings__AuthDb", sqlFixture.ConnectionString);
         SetEnvironment("ConnectionStrings__B2BDb", sqlFixture.ConnectionString);
         SetEnvironment(
