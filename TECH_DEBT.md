@@ -4,17 +4,6 @@
 
 ## LOW
 
-### Auth integration tests run the application under the E2E environment
-
-`Concertable.Auth.IntegrationTests.Fixtures/ApiFixture.cs` sets both host environment variables and
-`WebApplicationFactory` to `E2E`. This makes the whole integration suite load E2E configuration and
-registrations merely because the password-grant tests use the E2E-only `concertable-test` client and
-`ResourceOwnerPasswordValidator`. It blurs the integration/E2E boundary and differs from the B2B,
-Customer, and Search integration fixtures, which run under `Testing`.
-
-**Resolves when:** the normal Auth integration fixture runs under `Testing`, and the token-flow tests
-that require the E2E-only client and validator use a separate, explicitly scoped fixture or test host.
-
 ### E2E client identity and scopes are duplicated as contextual magic strings
 
 `Concertable.Testing.E2E/TestTokenMinter.cs` posts the literal client id `concertable-test` and the literal
