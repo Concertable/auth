@@ -1,9 +1,12 @@
 using Concertable.Auth.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
+using Concertable.ServiceDefaults;
 
 namespace Concertable.Auth.Pages.Account;
 
+[EnableRateLimiting(RateLimitPolicies.Login)]
 public sealed class ResetPasswordModel : PageModel
 {
     private readonly IAuthService authService;
