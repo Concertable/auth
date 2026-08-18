@@ -35,6 +35,7 @@ using NetTopologySuite;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddDefaultRateLimiting();
 
 var spaClient = builder.Configuration
     .GetSection(SpaClientSettings.SectionName)
@@ -45,7 +46,7 @@ builder.Services.AddRazorPages();
 if (builder.Environment.IsDevelopment())
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
@@ -179,6 +180,7 @@ app.MapDefaultEndpoints();
 app.UseForwardedHeaders();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseDefaultRateLimiting();
 app.UseIdentityServer();
 app.UseAuthorization();
 
