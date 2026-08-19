@@ -2,10 +2,12 @@ using Concertable.Auth.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.Auth.Pages.Account;
 
 [Authorize]
+[EnableRateLimiting(RateLimitPolicies.ChangePassword)]
 public sealed class ChangePasswordModel : PageModel
 {
     private readonly IAuthService authService;
