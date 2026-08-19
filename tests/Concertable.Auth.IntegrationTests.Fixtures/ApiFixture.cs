@@ -260,6 +260,10 @@ public sealed class ApiFixture : IAsyncLifetime
         SetEnvironment("ServiceAuth__B2BClientSecret", "b2b-test-secret");
         SetEnvironment("ServiceAuth__CustomerClientSecret", "customer-test-secret");
         SetEnvironment("ServiceAuth__AuthClientSecret", "auth-test-secret");
+        // The in-memory limiter's partitions persist across the shared host, so real limits would
+        // accumulate and 429 unrelated tests; the throttle is proven in B2B ApplicationRateLimitApiTests.
+        SetEnvironment("RateLimiting__Login__PermitLimit", "1000000");
+        SetEnvironment("RateLimiting__Global__PermitLimit", "1000000");
         ConfigureSpaClients();
     }
 
