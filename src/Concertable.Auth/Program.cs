@@ -42,10 +42,13 @@ var spaClient = builder.Configuration
 
 builder.Services.AddRazorPages();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+
 if (builder.Environment.IsDevelopment())
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        options.ForwardedHeaders |= ForwardedHeaders.XForwardedHost;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
