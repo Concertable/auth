@@ -2,9 +2,11 @@ using Concertable.Auth.Services;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Concertable.Auth.Pages.Account;
 
+[EnableRateLimiting(RateLimitPolicies.Credential)]
 public sealed class RegisterModel : PageModel
 {
     private readonly IAuthService authService;

@@ -1,3 +1,4 @@
+using Concertable.Auth;
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Data;
 using Concertable.Auth.Data.Entities;
@@ -51,6 +52,7 @@ public sealed class ApiFixture : IAsyncLifetime
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(Environments.Integration);
+            builder.ConfigureAppConfiguration((_, config) => config.RelaxRateLimiting(RateLimitPolicies.All));
             builder.ConfigureTestServices(services =>
             {
                 services.AddXunitLogging(outputAccessor);
