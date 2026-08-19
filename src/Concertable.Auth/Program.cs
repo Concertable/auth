@@ -45,10 +45,14 @@ builder.Services.AddRazorPages();
 if (builder.Environment.IsDevelopment())
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
+
+builder.AddDefaultRateLimiting();
+builder.AddRateLimitPolicy(RateLimitPolicies.Credential, new RateLimitWindow { PermitLimit = 10, WindowSeconds = 60 }, perUser: false);
+builder.AddRateLimitPolicy(RateLimitPolicies.ChangePassword, new RateLimitWindow { PermitLimit = 5, WindowSeconds = 60 }, perUser: true);
 
 builder.Services.AddKeyedSingleton<IGeometryProvider, GeographicGeometryProvider>(GeometryProviderType.Geographic, (_, _) =>
     new GeographicGeometryProvider(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326)));
@@ -181,6 +185,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseIdentityServer();
 app.UseAuthorization();
+app.UseDefaultRateLimiting();
 
 app.MapRazorPages();
 
