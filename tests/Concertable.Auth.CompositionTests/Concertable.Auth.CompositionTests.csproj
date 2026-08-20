@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsPackable>false</IsPackable><IsTestProject>true</IsTestProject></PropertyGroup>
+  <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
+  <ItemGroup><PackageReference Include="coverlet.collector" /><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /><PackageReference Include="xunit.runner.visualstudio" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Concertable.Auth\Concertable.Auth.csproj" />
+    <ProjectReference Include="..\..\src\Concertable.Auth.AppHost\Concertable.Auth.AppHost.csproj" />
+    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Composition.Testing\Concertable.Composition.Testing.csproj" Condition="'$(UseLocalPlatformPackages)' != 'true' And Exists('..\..\..\Concertable.Shared\tests\Concertable.Composition.Testing\Concertable.Composition.Testing.csproj')" />
+    <PackageReference Include="Concertable.Composition.Testing" Condition="'$(UseLocalPlatformPackages)' == 'true' Or !Exists('..\..\..\Concertable.Shared\tests\Concertable.Composition.Testing\Concertable.Composition.Testing.csproj')" />
+  </ItemGroup>
+</Project>
