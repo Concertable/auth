@@ -26,6 +26,7 @@ public static class AppHostExtensions
         WithLocalSpaClient(auth, "Customer", 5174);
         WithLocalSpaClient(auth, "Venue", 5175);
         WithLocalSpaClient(auth, "Artist", 5176);
+        WithLocalSpaClient(auth, "Admin", 5178);
 
         var lanIp = builder.Configuration["MobileLanIp"];
         if (!string.IsNullOrEmpty(lanIp))
