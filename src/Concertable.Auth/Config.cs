@@ -101,6 +101,7 @@ public static class Config
         WebClient(ClientIds.CustomerWeb, spa.Customer),
         WebClient(ClientIds.VenueWeb, spa.Venue),
         WebClient(ClientIds.ArtistWeb, spa.Artist),
+        WebClient(ClientIds.Admin, spa.Admin),
     ];
 
     private static Client WebClient(string clientId, WebClientSettings settings) => new()
