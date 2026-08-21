@@ -1,6 +1,6 @@
 # Concertable.Auth
 
-Identity-only adapter (OIDC issuer). Inherits root [`AGENTS.md`](../../AGENTS.md) + [`api/AGENTS.md`](../AGENTS.md); responsibilities/flows → [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Identity-only adapter (OIDC issuer). Inherits root [`AGENTS.md`](../../AGENTS.md); responsibilities/flows → [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## UI is server-rendered Razor Pages, not controllers/SPA
 
