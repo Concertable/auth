@@ -23,6 +23,9 @@ public static class AppHostExtensions
                           .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");
 
         auth.WithEnvironment("Auth__Authority", auth.GetEndpoint("https"));
+        WithLocalSpaClient(auth, "Customer", 5174);
+        WithLocalSpaClient(auth, "Venue", 5175);
+        WithLocalSpaClient(auth, "Artist", 5176);
 
         var lanIp = builder.Configuration["MobileLanIp"];
         if (!string.IsNullOrEmpty(lanIp))
@@ -32,5 +35,17 @@ public static class AppHostExtensions
         }
 
         return auth;
+    }
+
+    private static void WithLocalSpaClient(
+        IResourceBuilder<ProjectResource> auth,
+        string client,
+        int port)
+    {
+        var origin = $"https://localhost:{port}";
+
+        auth.WithEnvironment($"Auth__SpaClients__{client}__RedirectUri", $"{origin}/auth/callback")
+            .WithEnvironment($"Auth__SpaClients__{client}__PostLogoutRedirectUri", origin)
+            .WithEnvironment($"Auth__SpaClients__{client}__AllowedCorsOrigins__0", origin);
     }
 }
