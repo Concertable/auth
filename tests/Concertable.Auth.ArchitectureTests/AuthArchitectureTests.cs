@@ -3,9 +3,9 @@ using Concertable.Composition.Testing;
 using Microsoft.AspNetCore.Builder;
 using Xunit;
 
-namespace Concertable.Auth.CompositionTests;
+namespace Concertable.Auth.ArchitectureTests;
 
-public sealed class AuthCompositionTests
+public sealed class AuthArchitectureTests
 {
     [Fact]
     public void Web_ProductionGraphAndStrictValidation_AreValid()
