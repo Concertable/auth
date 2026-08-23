@@ -1,5 +1,5 @@
 using Concertable.Auth;
-using Concertable.Composition.Testing;
+using Concertable.Testing.Architecture;
 using Microsoft.AspNetCore.Builder;
 using Xunit;
 
