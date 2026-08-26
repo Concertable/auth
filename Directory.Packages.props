@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertablePlatformVersion>0.1.0-alpha.0.1202</ConcertablePlatformVersion>
+    <ConcertablePlatformVersion>0.1.0-alpha.0.1206</ConcertablePlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +32,7 @@
   <!-- Shared platform from the org feed, pinned lockstep via ConcertablePlatformVersion above.
        Bump only to a version already published to the feed, else restore fails NU1101. -->
   <ItemGroup>
+    <PackageVersion Include="Concertable.AppHost.Shared" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Kernel" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertablePlatformVersion)" />
@@ -42,6 +43,7 @@
     <PackageVersion Include="Concertable.Messaging.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.ServiceDefaults" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Blob.Infrastructure" Version="$(ConcertablePlatformVersion)" />
+    <PackageVersion Include="Concertable.Shared.Email.Application" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Email.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Geocoding.Infrastructure" Version="$(ConcertablePlatformVersion)" />
     <PackageVersion Include="Concertable.Shared.Imaging.Infrastructure" Version="$(ConcertablePlatformVersion)" />
@@ -51,6 +53,7 @@
   <ItemGroup>
     <GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.98" />
     <GlobalPackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
+    <GlobalPackageReference Include="MinVer" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
