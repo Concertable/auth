@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Concertable.Auth.IntegrationTests.Fixtures\Concertable.Auth.IntegrationTests.Fixtures.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Testing\Concertable.Testing.csproj" />
+    <PackageReference Include="Concertable.Testing" />
   </ItemGroup>
 
   <ItemGroup>
