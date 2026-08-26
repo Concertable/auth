@@ -5,7 +5,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Concertable.Auth\Concertable.Auth.csproj" />
     <ProjectReference Include="..\..\src\Concertable.Auth.AppHost\Concertable.Auth.AppHost.csproj" />
-    <ProjectReference Include="..\..\..\Concertable.Shared\tests\Concertable.Testing.Architecture\Concertable.Testing.Architecture.csproj" Condition="'$(UseLocalPlatformPackages)' != 'true' And Exists('..\..\..\Concertable.Shared\tests\Concertable.Testing.Architecture\Concertable.Testing.Architecture.csproj')" />
-    <PackageReference Include="Concertable.Testing.Architecture" Condition="'$(UseLocalPlatformPackages)' == 'true' Or !Exists('..\..\..\Concertable.Shared\tests\Concertable.Testing.Architecture\Concertable.Testing.Architecture.csproj')" />
+    <PackageReference Include="Concertable.Testing.Architecture" />
   </ItemGroup>
 </Project>
