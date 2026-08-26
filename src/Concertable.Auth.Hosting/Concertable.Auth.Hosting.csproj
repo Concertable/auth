@@ -12,8 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" />
     <PackageReference Include="Concertable.AppHost.Shared" />
+    <PackageReference Include="Concertable.Auth.Contracts" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
-    <ProjectReference Include="..\..\..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
 </Project>
