@@ -1,0 +1,34 @@
+{
+  "//": "Copy this file to appsettings.Development.json (gitignored) — or run ./scripts/setup-local-dev.ps1.",
+  "//2": "Registers each SPA's localhost OIDC redirect + CORS origin so login works against a local AppHost. No secrets here.",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Auth": {
+    "SpaClients": {
+      "Customer": {
+        "RedirectUri": "https://localhost:5174/auth/callback",
+        "PostLogoutRedirectUri": "https://localhost:5174",
+        "AllowedCorsOrigins": [ "https://localhost:5174" ]
+      },
+      "Venue": {
+        "RedirectUri": "https://localhost:5175/auth/callback",
+        "PostLogoutRedirectUri": "https://localhost:5175",
+        "AllowedCorsOrigins": [ "https://localhost:5175" ]
+      },
+      "Artist": {
+        "RedirectUri": "https://localhost:5176/auth/callback",
+        "PostLogoutRedirectUri": "https://localhost:5176",
+        "AllowedCorsOrigins": [ "https://localhost:5176" ]
+      },
+      "Admin": {
+        "RedirectUri": "https://localhost:5178/auth/callback",
+        "PostLogoutRedirectUri": "https://localhost:5178",
+        "AllowedCorsOrigins": [ "https://localhost:5178" ]
+      }
+    }
+  }
+}
