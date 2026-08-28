@@ -8,6 +8,7 @@ public static class AuthTopology
     public static AsbTopology AddAuthTopology(this AsbTopology topology) =>
         topology
             .Publish<CredentialRegisteredEvent>()
-            .Queue<SendEmailCommand>(AuthConstants.ServiceName)
-            .Queue<SendVerificationEmailCommand>(AuthConstants.ServiceName);
+            .ForService(AuthConstants.ServiceName)
+            .Queue<SendEmailCommand>()
+            .Queue<SendVerificationEmailCommand>();
 }
