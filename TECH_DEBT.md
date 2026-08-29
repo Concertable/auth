@@ -4,17 +4,6 @@
 
 ## LOW
 
-### `AuthDevSeeder` seeds no credential for `SeedState.UnverifiedVenueManager`
-
-`Data/Seeders/AuthDevSeeder.cs` seeds OIDC credentials for `SeedUsers.Admin`, the customers, and
-`SeedUsers.Managers` only. B2B's `SeedState.UnverifiedVenueManager` (`tenant-verification-gate@test.com`)
-is deliberately outside `SeedUsers.Managers` (so it touches no shared cross-service seed package), so it
-has **no way to log in** — the tenant-verification submit → admin-review flow can't be manually smoked in
-dev without first poking the `tenant.Verifications` row in the DB.
-
-**Resolves when:** `AuthDevSeeder` also seeds a `VenueWeb`-client credential for that user id / email, so a
-fresh dev stack has one venue manager in the unverified state.
-
 ### E2E client identity and scopes are duplicated as contextual magic strings
 
 `Concertable.Testing.E2E/TestTokenMinter.cs` posts the literal client id `concertable-test` and the literal
