@@ -15,6 +15,12 @@ internal sealed class AuthDevSeeder : IDevSeeder
 
     private const string DefaultPassword = "Password11!";
 
+    // Mirrors B2B's SeedState.UnverifiedVenueManager / UnverifiedTenant literally — that operator is
+    // deliberately kept outside SeedUsers.Managers so seeding it touches no shared cross-service package,
+    // so the id/email here can only be kept in sync by hand.
+    private static readonly Guid UnverifiedVenueManagerId = new("c1000000-0000-0000-0000-000000000001");
+    private const string UnverifiedVenueManagerEmail = "tenant-verification-gate@test.com";
+
     private readonly AuthDbContext context;
     private readonly IPasswordHasher passwordHasher;
     private readonly ILogger<AuthDevSeeder> logger;
@@ -52,6 +58,9 @@ internal sealed class AuthDevSeeder : IDevSeeder
             toAdd.Add(CredentialFactory.Create(
                 m.Id, m.Email, passwordHash,
                 m.Kind == ManagerKind.Artist ? ClientIds.ArtistWeb : ClientIds.VenueWeb));
+
+        toAdd.Add(CredentialFactory.Create(
+            UnverifiedVenueManagerId, UnverifiedVenueManagerEmail, passwordHash, ClientIds.VenueWeb));
 
         logger.SeedingCredentials(existing, toAdd.Count);
         context.Credentials.AddRange(toAdd);
