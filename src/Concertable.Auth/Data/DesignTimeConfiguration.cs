@@ -1,14 +1,11 @@
 namespace Concertable.Auth.Data;
 
-// Design-time only: the connection string `dotnet ef` uses to build the model (it never opens it).
-// Resolved from ConnectionStrings__B2BDb; throws if absent — ./initial-migrations.ps1 exports it locally.
+// ./initial-migrations.ps1 supplies a parseable AuthDb scaffolding value; live migration jobs resolve their connection separately.
 internal static class DesignTimeConfiguration
 {
-    private const string ConnectionStringName = "B2BDb";
-
     public static string ConnectionString() =>
-        Environment.GetEnvironmentVariable($"ConnectionStrings__{ConnectionStringName}")
+        Environment.GetEnvironmentVariable($"ConnectionStrings__{AuthDb.Name}")
         ?? throw new InvalidOperationException(
-            $"Design-time connection string 'ConnectionStrings__{ConnectionStringName}' is not set. " +
+            $"Design-time connection string 'ConnectionStrings__{AuthDb.Name}' is not set. " +
             "Set it via environment or user-secrets — ./initial-migrations.ps1 exports it for local re-scaffolds.");
 }
