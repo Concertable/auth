@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <CompositionValidationExclusion>No dependency-injection container or host builder.</CompositionValidationExclusion>
   </PropertyGroup>
 
   <ItemGroup>
