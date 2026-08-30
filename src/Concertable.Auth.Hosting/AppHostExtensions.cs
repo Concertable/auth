@@ -7,6 +7,36 @@ namespace Concertable.Auth.Hosting;
 
 public static class AppHostExtensions
 {
+    public static IResourceBuilder<ContainerResource> AddAuth(
+        this IDistributedApplicationBuilder builder,
+        string image,
+        string digest,
+        IResourceBuilder<SqlServerDatabaseResource> authDb,
+        IResourceBuilder<SqlServerDatabaseResource> b2bDb,
+        IResourceBuilder<AzureServiceBusResource> asb)
+    {
+        var auth = builder.AddContainerImage(AuthConstants.Resource, image, digest)
+                          .WithReference(authDb)
+                          .WaitFor(authDb)
+                          .WithReference(b2bDb)
+                          .WithReference(asb)
+                          .WaitFor(asb)
+                          .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");
+
+        auth.WithEnvironment("Auth__Authority", auth.GetEndpoint("https"));
+        foreach (var client in LocalSpaSurfaces.Authenticated)
+            auth.WithLocalSpaClient(client);
+
+        var lanIp = builder.Configuration["MobileLanIp"];
+        if (!string.IsNullOrEmpty(lanIp))
+        {
+            auth.WithEnvironment("Auth__ExpoGoRedirectUri__Customer", $"exp://{lanIp}:8082");
+            auth.WithEnvironment("Auth__ExpoGoRedirectUri__Business", $"exp://{lanIp}:8083");
+        }
+
+        return auth;
+    }
+
     public static IResourceBuilder<ProjectResource> AddAuth<TProject>(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<SqlServerDatabaseResource> authDb,
@@ -36,9 +66,10 @@ public static class AppHostExtensions
         return auth;
     }
 
-    extension(IResourceBuilder<ProjectResource> auth)
+    extension<T>(IResourceBuilder<T> auth)
+        where T : IResourceWithEnvironment
     {
-        public IResourceBuilder<ProjectResource> WithLocalSpaClient(LocalSpaSurface surface)
+        public IResourceBuilder<T> WithLocalSpaClient(LocalSpaSurface surface)
         {
             var client = surface.AuthClient
                 ?? throw new ArgumentException(
