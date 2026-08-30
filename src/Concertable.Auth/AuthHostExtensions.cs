@@ -71,7 +71,7 @@ public static class AuthHostExtensions
             builder.Services.AddScoped<AuditInterceptor>();
             builder.Services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
-            var authConnectionString = builder.Configuration.GetConnectionString("AuthDb");
+            var authConnectionString = builder.Configuration.GetConnectionString(AuthDb.Name);
             builder.Services.AddSeedingInfrastructure();
             builder.Services.AddSingleton<AuthConfigurationProvider>();
             builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
@@ -146,7 +146,7 @@ public static class AuthHostExtensions
                 .AddOperationalStore(options =>
                 {
                     options.ConfigureDbContext = db => db.UseSqlServer(
-                        builder.Configuration.GetConnectionString("B2BDb"),
+                        authConnectionString,
                         sql => sql.MigrationsAssembly(migrationsAssembly));
                     options.DefaultSchema = "idsrv";
                 })

@@ -253,7 +253,6 @@ public sealed class ApiFixture : IAsyncLifetime
         SetEnvironment("DOTNET_ENVIRONMENT", Environments.Integration);
         SetEnvironment("ASPNETCORE_ENVIRONMENT", Environments.Integration);
         SetEnvironment("ConnectionStrings__AuthDb", sqlFixture.ConnectionString);
-        SetEnvironment("ConnectionStrings__B2BDb", sqlFixture.ConnectionString);
         SetEnvironment(
             "ConnectionStrings__asb",
             "Endpoint=sb://localhost/;SharedAccessKeyName=test;SharedAccessKey=test");
