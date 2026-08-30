@@ -11,6 +11,7 @@ internal sealed class OperationalStoreMigrator
 {
     private const string Schema = "idsrv";
     private const int LockTimeoutMilliseconds = 10_000;
+    private const int CommandTimeoutSeconds = 600;
     private static readonly string[] TableNames =
     [
         "DeviceCodes",
@@ -55,30 +56,58 @@ internal sealed class OperationalStoreMigrator
         await LockTablesAsync(target, targetTransaction, definitions, ct);
         await EnsureTargetIsEmptyAsync(target, targetTransaction, definitions, ct);
 
-        await using var sourceTransaction = (SqlTransaction)await source.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        await LockTablesAsync(source, sourceTransaction, definitions, ct);
-
-        foreach (var definition in definitions)
+        var sourceTransaction = (SqlTransaction)await source.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        var targetCommitted = false;
+        try
         {
-            await CopyTableAsync(source, sourceTransaction, target, targetTransaction, definition, ct);
-            await CopyIdentityStateAsync(source, sourceTransaction, target, targetTransaction, definition, ct);
-        }
+            await LockTablesAsync(source, sourceTransaction, definitions, ct);
 
-        var reports = new List<OperationalStoreTableReport>(definitions.Count);
-        foreach (var definition in definitions)
+            foreach (var definition in definitions)
+            {
+                await CopyTableAsync(source, sourceTransaction, target, targetTransaction, definition, ct);
+                await CopyIdentityStateAsync(source, sourceTransaction, target, targetTransaction, definition, ct);
+            }
+
+            var reports = new List<OperationalStoreTableReport>(definitions.Count);
+            foreach (var definition in definitions)
+            {
+                var sourceState = await ReadStateAsync(source, sourceTransaction, definition, ct);
+                var targetState = await ReadStateAsync(target, targetTransaction, definition, ct);
+                if (sourceState != targetState)
+                    throw new InvalidOperationException(
+                        $"Verification failed for {Qualified(definition.Name)}; the target transaction was not committed.");
+
+                reports.Add(ToReport(definition.Name, sourceState, targetState));
+            }
+
+            await targetTransaction.CommitAsync(ct);
+            targetCommitted = true;
+            var warning = await ReleaseSourceLocksAsync(sourceTransaction);
+            return new OperationalStoreMigrationReport(true, reports, warning);
+        }
+        finally
         {
-            var sourceState = await ReadStateAsync(source, sourceTransaction, definition, ct);
-            var targetState = await ReadStateAsync(target, targetTransaction, definition, ct);
-            if (sourceState != targetState)
-                throw new InvalidOperationException(
-                    $"Verification failed for {Qualified(definition.Name)}; the target transaction was not committed.");
-
-            reports.Add(ToReport(definition.Name, sourceState, targetState));
+            try
+            {
+                await sourceTransaction.DisposeAsync();
+            }
+            catch when (targetCommitted)
+            {
+            }
         }
+    }
 
-        await targetTransaction.CommitAsync(ct);
-        await sourceTransaction.CommitAsync(ct);
-        return new OperationalStoreMigrationReport(true, reports);
+    private static async Task<string?> ReleaseSourceLocksAsync(SqlTransaction sourceTransaction)
+    {
+        try
+        {
+            await sourceTransaction.CommitAsync(CancellationToken.None);
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return $"Target committed, but release of the source read lock could not be confirmed: {exception.Message}";
+        }
     }
 
     private static async Task OpenAndValidateAsync(SqlConnection source, SqlConnection target, CancellationToken ct)
@@ -95,7 +124,7 @@ internal sealed class OperationalStoreMigrator
     private static async Task<string> ReadDatabaseIdentityAsync(SqlConnection connection, CancellationToken ct)
     {
         const string sql = "SELECT CONCAT(CONVERT(nvarchar(256), SERVERPROPERTY('ServerName')), N'|', DB_NAME())";
-        await using var command = new SqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection);
         return (string)(await command.ExecuteScalarAsync(ct)
             ?? throw new InvalidOperationException("Could not resolve the SQL database identity."));
     }
@@ -111,7 +140,8 @@ internal sealed class OperationalStoreMigrator
             var sourceDefinition = await ReadDefinitionAsync(source, tableName, ct);
             var targetDefinition = await ReadDefinitionAsync(target, tableName, ct);
             if (!sourceDefinition.Columns.SequenceEqual(targetDefinition.Columns)
-                || !sourceDefinition.PrimaryKey.SequenceEqual(targetDefinition.PrimaryKey, StringComparer.Ordinal))
+                || !sourceDefinition.PrimaryKey.SequenceEqual(targetDefinition.PrimaryKey, StringComparer.Ordinal)
+                || !sourceDefinition.Indexes.SequenceEqual(targetDefinition.Indexes))
             {
                 throw new InvalidOperationException(
                     $"Source and target schemas differ for {Qualified(tableName)}.");
@@ -138,18 +168,23 @@ internal sealed class OperationalStoreMigrator
                 column_definition.is_nullable,
                 column_definition.is_identity,
                 column_definition.is_computed,
-                column_definition.collation_name
+                column_definition.collation_name,
+                CONVERT(decimal(38, 0), identity_definition.seed_value),
+                CONVERT(decimal(38, 0), identity_definition.increment_value)
             FROM sys.columns AS column_definition
             INNER JOIN sys.tables AS table_definition
                 ON table_definition.object_id = column_definition.object_id
             INNER JOIN sys.schemas AS schema_definition
                 ON schema_definition.schema_id = table_definition.schema_id
+            LEFT JOIN sys.identity_columns AS identity_definition
+                ON identity_definition.object_id = column_definition.object_id
+                AND identity_definition.column_id = column_definition.column_id
             WHERE schema_definition.name = @schema AND table_definition.name = @table
             ORDER BY column_definition.column_id;
             """;
 
         var columns = new List<ColumnDefinition>();
-        await using (var command = new SqlCommand(columnSql, connection))
+        await using (var command = CreateCommand(columnSql, connection))
         {
             command.Parameters.AddWithValue("@schema", Schema);
             command.Parameters.AddWithValue("@table", tableName);
@@ -165,7 +200,9 @@ internal sealed class OperationalStoreMigrator
                     reader.GetBoolean(5),
                     reader.GetBoolean(6),
                     reader.GetBoolean(7),
-                    reader.IsDBNull(8) ? null : reader.GetString(8)));
+                    reader.IsDBNull(8) ? null : reader.GetString(8),
+                    reader.IsDBNull(9) ? null : reader.GetDecimal(9),
+                    reader.IsDBNull(10) ? null : reader.GetDecimal(10)));
             }
         }
 
@@ -193,7 +230,7 @@ internal sealed class OperationalStoreMigrator
             """;
 
         var primaryKey = new List<string>();
-        await using (var command = new SqlCommand(primaryKeySql, connection))
+        await using (var command = CreateCommand(primaryKeySql, connection))
         {
             command.Parameters.AddWithValue("@schema", Schema);
             command.Parameters.AddWithValue("@table", tableName);
@@ -205,7 +242,59 @@ internal sealed class OperationalStoreMigrator
         if (primaryKey.Count == 0)
             throw new InvalidOperationException($"Required table {Qualified(tableName)} has no primary key.");
 
-        return new TableDefinition(tableName, columns, primaryKey);
+        const string indexSql = """
+            SELECT
+                index_definition.name,
+                index_definition.type,
+                index_definition.is_unique,
+                index_definition.is_disabled,
+                index_definition.has_filter,
+                index_definition.filter_definition,
+                index_column.key_ordinal,
+                index_column.is_descending_key,
+                index_column.is_included_column,
+                column_definition.name
+            FROM sys.indexes AS index_definition
+            INNER JOIN sys.tables AS table_definition
+                ON table_definition.object_id = index_definition.object_id
+            INNER JOIN sys.schemas AS schema_definition
+                ON schema_definition.schema_id = table_definition.schema_id
+            INNER JOIN sys.index_columns AS index_column
+                ON index_column.object_id = index_definition.object_id
+                AND index_column.index_id = index_definition.index_id
+            INNER JOIN sys.columns AS column_definition
+                ON column_definition.object_id = index_column.object_id
+                AND column_definition.column_id = index_column.column_id
+            WHERE schema_definition.name = @schema
+                AND table_definition.name = @table
+                AND index_definition.is_primary_key = 0
+                AND index_definition.is_hypothetical = 0
+            ORDER BY index_definition.name, index_column.index_column_id;
+            """;
+
+        var indexes = new List<IndexColumnDefinition>();
+        await using (var command = CreateCommand(indexSql, connection))
+        {
+            command.Parameters.AddWithValue("@schema", Schema);
+            command.Parameters.AddWithValue("@table", tableName);
+            await using var reader = await command.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                indexes.Add(new IndexColumnDefinition(
+                    reader.GetString(0),
+                    reader.GetByte(1),
+                    reader.GetBoolean(2),
+                    reader.GetBoolean(3),
+                    reader.GetBoolean(4),
+                    reader.IsDBNull(5) ? null : reader.GetString(5),
+                    reader.GetByte(6),
+                    reader.GetBoolean(7),
+                    reader.GetBoolean(8),
+                    reader.GetString(9)));
+            }
+        }
+
+        return new TableDefinition(tableName, columns, primaryKey, indexes);
     }
 
     private static async Task LockTablesAsync(
@@ -214,13 +303,13 @@ internal sealed class OperationalStoreMigrator
         IEnumerable<TableDefinition> definitions,
         CancellationToken ct)
     {
-        await using (var timeout = new SqlCommand($"SET LOCK_TIMEOUT {LockTimeoutMilliseconds};", connection, transaction))
+        await using (var timeout = CreateCommand($"SET LOCK_TIMEOUT {LockTimeoutMilliseconds};", connection, transaction))
             await timeout.ExecuteNonQueryAsync(ct);
 
         foreach (var definition in definitions)
         {
             var sql = $"SELECT COUNT_BIG(*) FROM {Qualified(definition.Name)} WITH (TABLOCKX, HOLDLOCK);";
-            await using var command = new SqlCommand(sql, connection, transaction);
+            await using var command = CreateCommand(sql, connection, transaction);
             await command.ExecuteScalarAsync(ct);
         }
     }
@@ -250,7 +339,7 @@ internal sealed class OperationalStoreMigrator
     {
         var columns = string.Join(", ", definition.Columns.Select(column => Quote(column.Name)));
         var sql = $"SELECT {columns} FROM {Qualified(definition.Name)};";
-        await using var command = new SqlCommand(sql, source, sourceTransaction);
+        await using var command = CreateCommand(sql, source, sourceTransaction);
         await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, ct);
         using var bulkCopy = new SqlBulkCopy(
             target,
@@ -258,7 +347,7 @@ internal sealed class OperationalStoreMigrator
             targetTransaction)
         {
             DestinationTableName = Qualified(definition.Name),
-            BulkCopyTimeout = 600
+            BulkCopyTimeout = CommandTimeoutSeconds
         };
         foreach (var column in definition.Columns)
             bulkCopy.ColumnMappings.Add(column.Name, column.Name);
@@ -277,14 +366,14 @@ internal sealed class OperationalStoreMigrator
         if (!definition.Columns.Any(column => column.IsIdentity))
             return;
 
-        await using var readCommand = new SqlCommand(
+        await using var readCommand = CreateCommand(
             $"SELECT IDENT_CURRENT(N'{Schema}.{definition.Name}');",
             source,
             sourceTransaction);
         var currentIdentity = (decimal)(await readCommand.ExecuteScalarAsync(ct)
             ?? throw new InvalidOperationException($"Could not read the identity state for {Qualified(definition.Name)}."));
         var identity = currentIdentity.ToString(CultureInfo.InvariantCulture);
-        await using var writeCommand = new SqlCommand(
+        await using var writeCommand = CreateCommand(
             $"DBCC CHECKIDENT (N'{Qualified(definition.Name)}', RESEED, {identity});",
             target,
             targetTransaction);
@@ -301,7 +390,7 @@ internal sealed class OperationalStoreMigrator
         var columns = string.Join(", ", definition.Columns.Select(column => Quote(column.Name)));
         var orderBy = string.Join(", ", definition.PrimaryKey.Select(Quote));
         var sql = $"SELECT {columns} FROM {Qualified(definition.Name)} ORDER BY {orderBy};";
-        await using var command = new SqlCommand(sql, connection, transaction);
+        await using var command = CreateCommand(sql, connection, transaction);
         await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, ct);
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         while (await reader.ReadAsync(ct))
@@ -320,7 +409,7 @@ internal sealed class OperationalStoreMigrator
         string tableName,
         CancellationToken ct)
     {
-        await using var command = new SqlCommand($"SELECT COUNT_BIG(*) FROM {Qualified(tableName)};", connection, transaction);
+        await using var command = CreateCommand($"SELECT COUNT_BIG(*) FROM {Qualified(tableName)};", connection, transaction);
         return (long)(await command.ExecuteScalarAsync(ct)
             ?? throw new InvalidOperationException($"Could not count {Qualified(tableName)}."));
     }
@@ -370,6 +459,12 @@ internal sealed class OperationalStoreMigrator
     private static OperationalStoreTableReport ToReport(string name, TableState source, TableState target) =>
         new(name, source.Rows, target.Rows, source.Sha256, target.Sha256);
 
+    private static SqlCommand CreateCommand(
+        string sql,
+        SqlConnection connection,
+        SqlTransaction? transaction = null) =>
+        new(sql, connection, transaction) { CommandTimeout = CommandTimeoutSeconds };
+
     private static string Qualified(string tableName) => $"{Quote(Schema)}.{Quote(tableName)}";
 
     private static string Quote(string identifier) => $"[{identifier.Replace("]", "]]", StringComparison.Ordinal)}]";
@@ -383,19 +478,35 @@ internal sealed class OperationalStoreMigrator
         bool IsNullable,
         bool IsIdentity,
         bool IsComputed,
-        string? Collation);
+        string? Collation,
+        decimal? IdentitySeed,
+        decimal? IdentityIncrement);
+
+    private sealed record IndexColumnDefinition(
+        string Name,
+        byte Type,
+        bool IsUnique,
+        bool IsDisabled,
+        bool HasFilter,
+        string? FilterDefinition,
+        byte KeyOrdinal,
+        bool IsDescending,
+        bool IsIncluded,
+        string ColumnName);
 
     private sealed record TableDefinition(
         string Name,
         IReadOnlyList<ColumnDefinition> Columns,
-        IReadOnlyList<string> PrimaryKey);
+        IReadOnlyList<string> PrimaryKey,
+        IReadOnlyList<IndexColumnDefinition> Indexes);
 
     private sealed record TableState(long Rows, string Sha256);
 }
 
 internal sealed record OperationalStoreMigrationReport(
     bool Executed,
-    IReadOnlyList<OperationalStoreTableReport> Tables)
+    IReadOnlyList<OperationalStoreTableReport> Tables,
+    string? Warning = null)
 {
     public bool TargetIsEmpty => Tables.All(table => table.TargetRows == 0);
 }

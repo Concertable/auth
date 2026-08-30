@@ -85,4 +85,26 @@ public sealed class OperationalStoreMigrationTests : IAsyncLifetime
             Assert.Equal(1, table.TargetRows);
         });
     }
+
+    [Fact]
+    public async Task Inspect_WhenTargetIndexDiffers_RejectsTheSchema()
+    {
+        await fixture.ExecuteAsync(
+            fixture.TargetConnectionString,
+            "DROP INDEX [IX_PersistedGrants_Key] ON [idsrv].[PersistedGrants];");
+        try
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => migrator.InspectAsync(
+                fixture.SourceConnectionString,
+                fixture.TargetConnectionString));
+
+            Assert.Contains("schemas differ", exception.Message);
+        }
+        finally
+        {
+            await fixture.ExecuteAsync(
+                fixture.TargetConnectionString,
+                "CREATE UNIQUE INDEX [IX_PersistedGrants_Key] ON [idsrv].[PersistedGrants] ([Key]) WHERE [Key] IS NOT NULL;");
+        }
+    }
 }

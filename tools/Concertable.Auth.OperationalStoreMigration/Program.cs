@@ -58,6 +58,9 @@ static async Task<int> RunAsync(string[] args)
                 + $"target={table.TargetRows} ({table.TargetSha256})");
         }
 
+        if (report.Warning is not null)
+            Console.Error.WriteLine($"WARNING: {report.Warning}");
+
         if (!execute)
             Console.WriteLine(report.TargetIsEmpty
                 ? "Target is empty and schema-compatible; the copy can proceed after Auth traffic is quiesced."

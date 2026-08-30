@@ -102,6 +102,14 @@ public sealed class OperationalStoreMigrationFixture : IAsyncLifetime
             ?? throw new InvalidOperationException("Identity state was not found."));
     }
 
+    public async Task ExecuteAsync(string connectionString, string sql)
+    {
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
+    }
+
     private async Task<string> CreateDatabaseAsync(string databaseName)
     {
         var connectionString = new SqlConnectionStringBuilder(sqlFixture.ConnectionString)
