@@ -12,13 +12,11 @@ public static class AppHostExtensions
         string image,
         string digest,
         IResourceBuilder<SqlServerDatabaseResource> authDb,
-        IResourceBuilder<SqlServerDatabaseResource> b2bDb,
         IResourceBuilder<AzureServiceBusResource> asb)
     {
         var auth = builder.AddContainerImage(AuthConstants.Resource, image, digest)
                           .WithReference(authDb)
                           .WaitFor(authDb)
-                          .WithReference(b2bDb)
                           .WithReference(asb)
                           .WaitFor(asb)
                           .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");
