@@ -4,6 +4,7 @@ using Concertable.Testing.Integration;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Respawn;
 using Xunit;
 
 namespace Concertable.Auth.IntegrationTests.Fixtures;
@@ -11,6 +12,8 @@ namespace Concertable.Auth.IntegrationTests.Fixtures;
 public sealed class OperationalStoreMigrationFixture : IAsyncLifetime
 {
     private readonly SqlFixture sqlFixture = new();
+    private RespawnableDatabase sourceDatabase = null!;
+    private RespawnableDatabase targetDatabase = null!;
 
     public string SourceConnectionString { get; private set; } = null!;
     public string TargetConnectionString { get; private set; } = null!;
@@ -22,14 +25,21 @@ public sealed class OperationalStoreMigrationFixture : IAsyncLifetime
         TargetConnectionString = await CreateDatabaseAsync("ConcertableAuthOperationalTarget");
         await MigrateAsync(SourceConnectionString);
         await MigrateAsync(TargetConnectionString);
+        sourceDatabase = await RespawnableDatabase.CreateAsync(SourceConnectionString);
+        targetDatabase = await RespawnableDatabase.CreateAsync(TargetConnectionString);
     }
 
-    public async Task DisposeAsync() => await sqlFixture.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        await sourceDatabase.DisposeAsync();
+        await targetDatabase.DisposeAsync();
+        await sqlFixture.DisposeAsync();
+    }
 
     public async Task ResetAsync()
     {
-        await ClearAsync(SourceConnectionString);
-        await ClearAsync(TargetConnectionString);
+        await sourceDatabase.ResetAsync();
+        await targetDatabase.ResetAsync();
     }
 
     public async Task SeedEveryTableAsync(string connectionString)
@@ -136,22 +146,34 @@ public sealed class OperationalStoreMigrationFixture : IAsyncLifetime
         await provider.GetRequiredService<PersistedGrantDbContext>().Database.MigrateAsync();
     }
 
-    private static async Task ClearAsync(string connectionString)
+    private sealed class RespawnableDatabase : IAsyncDisposable
     {
-        const string sql = """
-            DELETE FROM [idsrv].[DeviceCodes];
-            DELETE FROM [idsrv].[Keys];
-            DELETE FROM [idsrv].[PersistedGrants];
-            DELETE FROM [idsrv].[PushedAuthorizationRequests];
-            DELETE FROM [idsrv].[ServerSideSessions];
-            DBCC CHECKIDENT ('[idsrv].[PersistedGrants]', RESEED, 0);
-            DBCC CHECKIDENT ('[idsrv].[PushedAuthorizationRequests]', RESEED, 0);
-            DBCC CHECKIDENT ('[idsrv].[ServerSideSessions]', RESEED, 0);
-            """;
+        private readonly SqlConnection connection;
+        private readonly Respawner respawner;
 
-        await using var connection = new SqlConnection(connectionString);
-        await connection.OpenAsync();
-        await using var command = new SqlCommand(sql, connection);
-        await command.ExecuteNonQueryAsync();
+        private RespawnableDatabase(SqlConnection connection, Respawner respawner)
+        {
+            this.connection = connection;
+            this.respawner = respawner;
+        }
+
+        public static async Task<RespawnableDatabase> CreateAsync(string connectionString)
+        {
+            var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            var respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
+            {
+                SchemasToInclude = ["idsrv"],
+                DbAdapter = DbAdapter.SqlServer,
+                WithReseed = true
+            });
+
+            return new RespawnableDatabase(connection, respawner);
+        }
+
+        public Task ResetAsync() => respawner.ResetAsync(connection);
+
+        public ValueTask DisposeAsync() => connection.DisposeAsync();
     }
 }
