@@ -35,8 +35,6 @@
        Bump only to a version already published to the feed, else restore fails NU1101. -->
   <ItemGroup>
     <PackageVersion Include="Concertable.AppHost.Shared" Version="$(ConcertableDotNetPlatformVersion)" />
-    <PackageVersion Include="Concertable.Auth.Hosting" Version="$(ConcertableDotNetPlatformVersion)" />
-    <PackageVersion Include="Concertable.Auth.Contracts" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Kernel" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertableDotNetPlatformVersion)" />
