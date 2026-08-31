@@ -21,10 +21,9 @@
     <PackageReference Include="Reunion.Errors" />
   </ItemGroup>
 
-  <!-- Shared platform + Auth.Contracts as feed packages (versions in Directory.Packages.props).
-       Keep these as PackageReferences, never ProjectReferences, so Auth carves out standalone. -->
+  <!-- Shared platform stays on feed packages; Auth.Contracts is owned by this repository. -->
   <ItemGroup>
-    <PackageReference Include="Concertable.Auth.Contracts" />
+    <ProjectReference Include="..\..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" />
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Shared" />
     <PackageReference Include="Concertable.Seed.Identity" />
