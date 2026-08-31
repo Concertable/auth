@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verify:
+    name: Build, test, and verify manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore Concertable.Auth.slnx
+
+      - name: Build
+        run: dotnet build Concertable.Auth.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Concertable.Auth.slnx --configuration Release --no-build --no-restore
+
+      - name: Verify AppHost manifest
+        shell: pwsh
+        run: ./scripts/verify-auth-manifest.ps1 -Configuration Release -OutputPath '${{ runner.temp }}/auth-manifest.json'
