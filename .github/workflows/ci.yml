@@ -48,6 +48,12 @@ jobs:
         shell: pwsh
         run: ./scripts/verify-auth-manifest.ps1 -Configuration Release -OutputPath '${{ runner.temp }}/auth-manifest.json'
 
+      - name: Verify package readiness
+        shell: pwsh
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+        run: ./scripts/verify-auth-packages.ps1 -Configuration Release
+
   gate:
     name: Required CI gate
     if: always()
