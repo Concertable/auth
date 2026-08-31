@@ -7,7 +7,7 @@ namespace Concertable.Auth.Hosting;
 
 public static class AppHostExtensions
 {
-    public static IResourceBuilder<ContainerResource> AddAuth(
+    public static IResourceBuilder<ServiceContainerResource> AddAuth(
         this IDistributedApplicationBuilder builder,
         string image,
         string digest,
