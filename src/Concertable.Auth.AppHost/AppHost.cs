@@ -1,7 +1,7 @@
 using Aspire.Hosting;
 using Concertable.Auth.Hosting;
 
-public static class AuthAppHost
+public static class AppHost
 {
     public static IDistributedApplicationBuilder CreateBuilder(string[] args)
     {
