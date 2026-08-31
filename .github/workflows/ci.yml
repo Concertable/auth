@@ -47,3 +47,20 @@ jobs:
       - name: Verify AppHost manifest
         shell: pwsh
         run: ./scripts/verify-auth-manifest.ps1 -Configuration Release -OutputPath '${{ runner.temp }}/auth-manifest.json'
+
+  gate:
+    name: Required CI gate
+    if: always()
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+      - name: Require successful verification
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        run: |
+          if [ "$VERIFY_RESULT" != "success" ]; then
+            echo "::error::Credentialed verification did not complete successfully ($VERIFY_RESULT)."
+            exit 1
+          fi
