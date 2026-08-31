@@ -7,13 +7,14 @@
     <!-- AppHost composition is exempt from deployable-closure boundaries; see the packages skill. -->
     <EnforceServiceBoundary>false</EnforceServiceBoundary>
     <IsPackable>true</IsPackable>
+    <Description>Concertable Auth service hosting metadata and Aspire topology registration.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" />
     <PackageReference Include="Concertable.AppHost.Shared" />
-    <PackageReference Include="Concertable.Auth.Contracts" />
     <PackageReference Include="Concertable.Shared.Email.Application" />
+    <ProjectReference Include="..\..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

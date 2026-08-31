@@ -6,12 +6,12 @@ authentication *adapter service*: it owns credentials and identity, issues token
 provision its own user/profile rows). As an adapter, data services may call it synchronously and
 `WaitFor` it at startup.
 
-## Canonical source vs. this mirror
+## Auth promotion source
 
-Development happens in the **monorepo** ([`Concertable/concertable`](https://github.com/Concertable/concertable)),
-under `api/Concertable.Auth/`. That folder is **automatically mirrored** to the read-only repo
-[`Concertable/auth`](https://github.com/Concertable/auth) on every push to
-`main`. **Don't open PRs against the mirror** — nothing flows back from it.
+Auth promotion changes now land in this repository. During checkpoint 10B, the preserved Auth source in
+[`Concertable/concertable`](https://github.com/Concertable/concertable) remains available for compatibility
+and rollback, but mirror automation must not overwrite this repository. Open Auth preparation pull requests
+here; canonical releases and deployment remain separately approved cutover steps.
 
 ## Building standalone
 
@@ -22,8 +22,18 @@ exported as `GITHUB_PACKAGES_TOKEN` (the `nuget.config` reads it):
 
 ```sh
 export GITHUB_PACKAGES_TOKEN=<your read:packages PAT>
-dotnet build src/Concertable.Auth/Concertable.Auth.csproj
+dotnet build Concertable.Auth.slnx
 ```
 
-(In the monorepo's CI the same variable is supplied by the workflow's `GITHUB_TOKEN`; standalone,
-you export your own PAT.)
+(In this repository's CI the same variable is supplied by the workflow's short-lived `GITHUB_TOKEN`;
+standalone, you export your own PAT.)
+
+## Verifying package readiness
+
+The repository owns two NuGet packages: `Concertable.Auth.Contracts` and `Concertable.Auth.Hosting`.
+Verification packs both without publishing, checks their manifests and common version, then restores and
+builds a clean temporary consumer:
+
+```sh
+pwsh ./scripts/verify-auth-packages.ps1 -Configuration Release
+```
