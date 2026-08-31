@@ -35,7 +35,7 @@ jobs:
 
       - name: Restore
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
         run: dotnet restore Concertable.Auth.slnx
 
       - name: Build
