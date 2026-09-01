@@ -44,4 +44,8 @@
     <InternalsVisibleTo Include="Concertable.Auth.UnitTests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="appsettings.E2E.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
 </Project>
