@@ -64,6 +64,19 @@ function Get-ImageInspection {
     return ($json | ConvertFrom-Json)[0]
 }
 
+function Assert-ImageTagAvailable {
+    param([Parameter(Mandatory)][string] $Image)
+
+    $imageIds = @(& docker image ls --quiet --no-trunc --filter "reference=$Image")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not check whether image tag '$Image' is available."
+    }
+
+    if ($imageIds.Count -gt 0) {
+        throw "Refusing to overwrite existing image tag '$Image'."
+    }
+}
+
 function Assert-ImageMetadata {
     param(
         [Parameter(Mandatory)]
@@ -125,6 +138,13 @@ function Remove-VerifiedImages {
 }
 
 try {
+    if ($RuntimeImage.Equals($MigrationImage, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'RuntimeImage and MigrationImage must use distinct tags.'
+    }
+
+    Assert-ImageTagAvailable -Image $RuntimeImage
+    Assert-ImageTagAvailable -Image $MigrationImage
+
     $commonArguments = @(
         'build',
         '--file', (Join-Path $repositoryRoot 'Dockerfile'),
