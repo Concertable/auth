@@ -107,22 +107,40 @@ jobs:
           -MigrationImage 'concertable/auth-operational-store-migration:verification'
           -KeepImages
 
-      - name: Scan runtime image
+      - name: Scan runtime image vulnerabilities
         run: >-
           docker run --rm
           --volume /var/run/docker.sock:/var/run/docker.sock
           --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
           aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
-          image --scanners vuln,secret --severity CRITICAL --exit-code 1 --no-progress
+          image --scanners vuln --severity CRITICAL --exit-code 1 --no-progress
           concertable/auth:verification
 
-      - name: Scan migration image
+      - name: Scan runtime image secrets
         run: >-
           docker run --rm
           --volume /var/run/docker.sock:/var/run/docker.sock
           --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
           aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
-          image --scanners vuln,secret --severity CRITICAL --exit-code 1 --no-progress
+          image --scanners secret --exit-code 1 --no-progress
+          concertable/auth:verification
+
+      - name: Scan migration image vulnerabilities
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          image --scanners vuln --severity CRITICAL --exit-code 1 --no-progress
+          concertable/auth-operational-store-migration:verification
+
+      - name: Scan migration image secrets
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          image --scanners secret --exit-code 1 --no-progress
           concertable/auth-operational-store-migration:verification
 
       - name: Generate and verify image SBOMs
