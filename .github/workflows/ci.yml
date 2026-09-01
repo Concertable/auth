@@ -76,10 +76,121 @@ jobs:
             Remove-Item -LiteralPath $verificationRoot -Recurse -Force
           }
 
+  images:
+    name: Build and scan Auth images
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Scan source for secrets
+        run: >-
+          docker run --rm
+          --volume '${{ github.workspace }}:/work:ro'
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          filesystem --scanners secret --exit-code 1 --no-progress /work
+
+      - name: Build and inspect images without publishing
+        shell: pwsh
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+        run: >-
+          ./scripts/verify-auth-images.ps1
+          -RuntimeImage 'concertable/auth:verification'
+          -MigrationImage 'concertable/auth-operational-store-migration:verification'
+          -KeepImages
+
+      - name: Scan runtime image vulnerabilities
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          image --scanners vuln --severity CRITICAL --exit-code 1 --no-progress
+          concertable/auth:verification
+
+      - name: Scan runtime image secrets
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          image --scanners secret --exit-code 1 --no-progress
+          concertable/auth:verification
+
+      - name: Scan migration image vulnerabilities
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          image --scanners vuln --severity CRITICAL --exit-code 1 --no-progress
+          concertable/auth-operational-store-migration:verification
+
+      - name: Scan migration image secrets
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
+          aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+          image --scanners secret --exit-code 1 --no-progress
+          concertable/auth-operational-store-migration:verification
+
+      - name: Generate and verify image SBOMs
+        shell: pwsh
+        run: |
+          $evidence = '${{ runner.temp }}/auth-image-evidence'
+          New-Item -ItemType Directory -Path $evidence | Out-Null
+          foreach ($item in @(
+            @{ Image = 'concertable/auth:verification'; File = 'auth-runtime.cdx.json' },
+            @{ Image = 'concertable/auth-operational-store-migration:verification'; File = 'auth-migration.cdx.json' }
+          )) {
+            docker run --rm `
+              --volume /var/run/docker.sock:/var/run/docker.sock `
+              --volume "${evidence}:/evidence" `
+              aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 `
+              image --format cyclonedx --output "/evidence/$($item.File)" $item.Image
+            if ($LASTEXITCODE -ne 0) {
+              throw "SBOM generation failed for $($item.Image)."
+            }
+
+            $sbom = Get-Content -Raw -LiteralPath (Join-Path $evidence $item.File) | ConvertFrom-Json
+            if ($sbom.bomFormat -ne 'CycloneDX' -or @($sbom.components).Count -eq 0) {
+              throw "SBOM validation failed for $($item.Image)."
+            }
+          }
+
+      - name: Clean image verification artifacts
+        if: always()
+        shell: pwsh
+        run: |
+          foreach ($image in @(
+            'concertable/auth:verification',
+            'concertable/auth-operational-store-migration:verification'
+          )) {
+            docker image inspect $image *> $null
+            if ($LASTEXITCODE -eq 0) {
+              docker image rm --force $image
+              if ($LASTEXITCODE -ne 0) {
+                throw "Could not remove verification image '$image'."
+              }
+            }
+          }
+          Remove-Item -LiteralPath '${{ runner.temp }}/auth-image-evidence' -Recurse -Force -ErrorAction SilentlyContinue
+
   gate:
     name: Required CI gate
     if: always()
-    needs: verify
+    needs:
+      - verify
+      - images
     runs-on: ubuntu-latest
     permissions: {}
 
@@ -87,8 +198,13 @@ jobs:
       - name: Require successful verification
         env:
           VERIFY_RESULT: ${{ needs.verify.result }}
+          IMAGES_RESULT: ${{ needs.images.result }}
         run: |
           if [ "$VERIFY_RESULT" != "success" ]; then
             echo "::error::Credentialed verification did not complete successfully ($VERIFY_RESULT)."
+            exit 1
+          fi
+          if [ "$IMAGES_RESULT" != "success" ]; then
+            echo "::error::Image verification did not complete successfully ($IMAGES_RESULT)."
             exit 1
           fi
