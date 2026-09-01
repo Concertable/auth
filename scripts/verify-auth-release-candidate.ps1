@@ -42,12 +42,14 @@ $markerPath = Join-Path $releaseRoot '.auth-release-candidate'
 $packageRoot = Join-Path $releaseRoot 'package-verification'
 $imageRoot = Join-Path $releaseRoot 'images'
 $evidenceRoot = Join-Path $releaseRoot 'evidence'
-$trivyCache = Join-Path $releaseRoot '.trivy-cache'
 $manifestPath = Join-Path $releaseRoot 'release-manifest.json'
 $releaseId = [Guid]::NewGuid().ToString('N')
+$trivyCacheVolume = "concertable-auth-trivy-cache-$releaseId"
 $runtimeImage = "concertable/auth:release-candidate-$releaseId"
 $migrationImage = "concertable/auth-operational-store-migration:release-candidate-$releaseId"
 $candidateImages = [System.Collections.Generic.List[string]]::new()
+$releaseRootCreated = $false
+$trivyCacheVolumeCreated = $false
 $completed = $false
 $releaseVersion = ''
 $packageToken = $env:GITHUB_PACKAGES_TOKEN
@@ -129,14 +131,40 @@ function Invoke-Trivy {
     param([Parameter(Mandatory)][string[]] $Arguments)
 
     & docker run --rm `
-        --volume /var/run/docker.sock:/var/run/docker.sock `
         --volume "${repositoryRoot}:/work:ro" `
+        --volume "${imageRoot}:/images:ro" `
         --volume "${evidenceRoot}:/evidence" `
-        --volume "${trivyCache}:/root/.cache/trivy" `
+        --volume "${trivyCacheVolume}:/root/.cache/trivy" `
         $trivyImage `
         @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "Trivy failed with exit code $LASTEXITCODE for arguments '$($Arguments -join ' ')'."
+    }
+}
+
+function New-TrivyCacheVolume {
+    $createdVolume = (& docker volume create `
+        --label "com.concertable.auth.release-candidate=$releaseId" `
+        $trivyCacheVolume).Trim()
+    if ($LASTEXITCODE -ne 0 -or $createdVolume -ne $trivyCacheVolume) {
+        throw "Could not create owned Trivy cache volume '$trivyCacheVolume'."
+    }
+}
+
+function Remove-TrivyCacheVolume {
+    $inspectionJson = & docker volume inspect $trivyCacheVolume 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return
+    }
+
+    $inspection = ($inspectionJson | ConvertFrom-Json)[0]
+    if ($inspection.Labels.'com.concertable.auth.release-candidate' -ne $releaseId) {
+        throw "Refusing to remove unowned Trivy cache volume '$trivyCacheVolume'."
+    }
+
+    & docker volume rm $trivyCacheVolume
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not remove Trivy cache volume '$trivyCacheVolume'."
     }
 }
 
@@ -208,8 +236,20 @@ try {
         throw 'GITHUB_PACKAGES_TOKEN is required for release-candidate package restore and runtime image build.'
     }
 
-    New-Item -ItemType Directory -Path $releaseRoot, $imageRoot, $evidenceRoot, $trivyCache | Out-Null
-    Set-Content -LiteralPath $markerPath -Value 'Concertable.Auth release candidate' -Encoding utf8NoBOM
+    New-Item -ItemType Directory -Path $releaseRoot | Out-Null
+    $releaseRootCreated = $true
+    try {
+        Set-Content -LiteralPath $markerPath -Value 'Concertable.Auth release candidate' -Encoding utf8NoBOM
+    }
+    catch {
+        Remove-Item -LiteralPath $releaseRoot -Recurse -Force
+        $releaseRootCreated = $false
+        throw
+    }
+    New-Item -ItemType Directory -Path $imageRoot, $evidenceRoot | Out-Null
+
+    New-TrivyCacheVolume
+    $trivyCacheVolumeCreated = $true
 
     $env:GITHUB_PACKAGES_TOKEN = $packageToken
     & (Join-Path $PSScriptRoot 'verify-auth-packages.ps1') `
@@ -220,8 +260,12 @@ try {
     Remove-Item Env:GITHUB_PACKAGES_TOKEN -ErrorAction SilentlyContinue
 
     $version = (Get-Content -Raw -LiteralPath (Join-Path $packageRoot 'version.txt')).Trim()
-    if ($version -notmatch '^0\.2\.\d+(?:-[0-9A-Za-z.-]+)?$') {
-        throw "Auth release-candidate version '$version' is outside the independent 0.2.x train."
+    if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
+        throw "Auth release-candidate version '$version' is not valid SemVer."
+    }
+    $releaseCoreVersion = [version] ($version.Split('-', 2)[0])
+    if ($releaseCoreVersion -lt [version] '0.2.0') {
+        throw "Auth release-candidate version '$version' is below the independent 0.2.0 baseline."
     }
     $releaseVersion = $version
 
@@ -311,29 +355,31 @@ try {
     )
 
     foreach ($item in $imageEvidence) {
+        & docker image save --output $item.archive $item.image
+        if ($LASTEXITCODE -ne 0 -or (Get-Item -LiteralPath $item.archive).Length -eq 0) {
+            throw "Could not save release-candidate image '$($item.image)'."
+        }
+
+        $archiveFile = [System.IO.Path]::GetFileName($item.archive)
         $vulnerabilityFile = [System.IO.Path]::GetFileName($item.vulnerabilities)
         $secretFile = [System.IO.Path]::GetFileName($item.secrets)
         $sbomFile = [System.IO.Path]::GetFileName($item.sbom)
         Invoke-Trivy -Arguments @(
             'image', '--scanners', 'vuln', '--severity', 'CRITICAL', '--exit-code', '1', '--format', 'json',
-            '--output', "/evidence/$vulnerabilityFile", '--no-progress', $item.image
+            '--output', "/evidence/$vulnerabilityFile", '--no-progress', '--input', "/images/$archiveFile"
         )
         Invoke-Trivy -Arguments @(
             'image', '--scanners', 'secret', '--exit-code', '1', '--format', 'json',
-            '--output', "/evidence/$secretFile", '--no-progress', $item.image
+            '--output', "/evidence/$secretFile", '--no-progress', '--input', "/images/$archiveFile"
         )
         Invoke-Trivy -Arguments @(
-            'image', '--format', 'cyclonedx', '--output', "/evidence/$sbomFile", '--no-progress', $item.image
+            'image', '--format', 'cyclonedx', '--output', "/evidence/$sbomFile", '--no-progress',
+            '--input', "/images/$archiveFile"
         )
 
         $sbom = Get-Content -Raw -LiteralPath $item.sbom | ConvertFrom-Json
         if ($sbom.bomFormat -ne 'CycloneDX' -or @($sbom.components).Count -eq 0) {
             throw "Release-candidate SBOM validation failed for '$($item.image)'."
-        }
-
-        & docker image save --output $item.archive $item.image
-        if ($LASTEXITCODE -ne 0 -or (Get-Item -LiteralPath $item.archive).Length -eq 0) {
-            throw "Could not save release-candidate image '$($item.image)'."
         }
     }
 
@@ -361,6 +407,7 @@ try {
             repository = $_.repository
             version = $version
             sourceRevision = $revision
+            intendedTags = @($version, $revision)
             localImageId = [string] $inspection.Id
             archive = Get-ArtifactRecord -Path $_.archive
             sbom = Get-ArtifactRecord -Path $_.sbom
@@ -368,8 +415,6 @@ try {
             allSeveritySecretScan = Get-ArtifactRecord -Path $_.secrets
         }
     })
-
-    Remove-Item -LiteralPath $trivyCache -Recurse -Force
 
     $manifest = [ordered]@{
         schemaVersion = 1
@@ -400,7 +445,7 @@ try {
         $manifest.cleanConsumer.path
         $manifest.sourceSecretScan.path
     ) | Sort-Object
-    $actualArtifactPaths = @(Get-ChildItem -LiteralPath $releaseRoot -Recurse -File |
+    $actualArtifactPaths = @(Get-ChildItem -LiteralPath $releaseRoot -Force -Recurse -File |
         Where-Object FullName -NotIn @($markerPath, $manifestPath) |
         ForEach-Object { [System.IO.Path]::GetRelativePath($releaseRoot, $_.FullName).Replace('\', '/') } |
         Sort-Object)
@@ -418,14 +463,29 @@ finally {
     Remove-Item Env:GITHUB_PACKAGES_TOKEN -ErrorAction SilentlyContinue
     $packageToken = $null
 
-    if (-not [string]::IsNullOrWhiteSpace($releaseVersion)) {
-        foreach ($image in $candidateImages) {
-            Remove-CandidateImage -Image $image -Version $releaseVersion
+    try {
+        if (-not [string]::IsNullOrWhiteSpace($releaseVersion)) {
+            foreach ($image in $candidateImages) {
+                Remove-CandidateImage -Image $image -Version $releaseVersion
+            }
         }
     }
-
-    if ((Test-Path -LiteralPath $markerPath -PathType Leaf) -and (-not $KeepArtifacts -or -not $completed)) {
-        Assert-ReleaseRoot
-        Remove-Item -LiteralPath $releaseRoot -Recurse -Force
+    finally {
+        try {
+            if ($trivyCacheVolumeCreated) {
+                Remove-TrivyCacheVolume
+            }
+        }
+        finally {
+            if ((Test-Path -LiteralPath $markerPath -PathType Leaf) -and (-not $KeepArtifacts -or -not $completed)) {
+                Assert-ReleaseRoot
+                Remove-Item -LiteralPath $releaseRoot -Recurse -Force
+                $releaseRootCreated = $false
+            }
+            elseif ($releaseRootCreated -and -not (Test-Path -LiteralPath $markerPath)) {
+                Remove-Item -LiteralPath $releaseRoot -Recurse -Force -ErrorAction SilentlyContinue
+                $releaseRootCreated = $false
+            }
+        }
     }
 }
