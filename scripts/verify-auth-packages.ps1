@@ -6,7 +6,9 @@ param(
     [ValidateSet('All', 'Prepare', 'Complete')]
     [string] $Phase = 'All',
 
-    [string] $OutputPath
+    [string] $OutputPath,
+
+    [switch] $KeepArtifacts
 )
 
 Set-StrictMode -Version Latest
@@ -14,6 +16,10 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+    if ($KeepArtifacts) {
+        throw 'OutputPath is required when KeepArtifacts is specified.'
+    }
+
     if ($Phase -ne 'All') {
         throw 'OutputPath is required for the Prepare and Complete phases.'
     }
@@ -240,7 +246,9 @@ function Complete-PackageVerification {
         Write-Host "Verified Auth packages at version ${contractsVersion}: $($expectedPackageIds -join ', ')."
     }
     finally {
-        Remove-Item -LiteralPath $verificationRoot -Recurse -Force
+        if (-not $KeepArtifacts) {
+            Remove-Item -LiteralPath $verificationRoot -Recurse -Force
+        }
     }
 }
 
