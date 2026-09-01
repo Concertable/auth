@@ -154,6 +154,13 @@ function New-TrivyCacheVolume {
 function Remove-TrivyCacheVolume {
     $inspectionJson = & docker volume inspect $trivyCacheVolume 2>$null
     if ($LASTEXITCODE -ne 0) {
+        $matchingVolumes = @(& docker volume ls --quiet --filter "name=$trivyCacheVolume" 2>$null)
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not prove Trivy cache volume '$trivyCacheVolume' is absent."
+        }
+        if ($matchingVolumes -contains $trivyCacheVolume) {
+            throw "Could not inspect existing Trivy cache volume '$trivyCacheVolume'."
+        }
         return
     }
 
