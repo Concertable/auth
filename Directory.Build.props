@@ -21,18 +21,24 @@
   <!-- Package publishing. Projects opt in with <IsPackable>true</IsPackable>; everything
        else (libs not yet published, hosts, tests) stays unpackable so a solution-wide
        `dotnet pack` produces only the intended packages. Version is MinVer-derived
-       (GlobalPackageReference in Directory.Packages.props); untagged builds -> 0.1.0-alpha.N. -->
+       (GlobalPackageReference in Directory.Packages.props); untagged builds -> 0.2.0-alpha.N. -->
   <PropertyGroup>
     <IsPackable Condition="'$(IsPackable)' == ''">false</IsPackable>
     <Authors>Concertable</Authors>
     <Company>Concertable</Company>
-    <RepositoryUrl>https://github.com/Concertable/concertable</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/Concertable/concertable</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Concertable/auth</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Concertable/auth</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <MinVerTagPrefix>v</MinVerTagPrefix>
-    <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+    <!-- Auth's retained package high-water mark is 0.1.0-alpha.0.1283. Start the independent train above it. -->
+    <MinVerMinimumMajorMinor>0.2</MinVerMinimumMajorMinor>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <!-- Registry lives here, not in publish-images.yml: a carve takes only the service folder. -->
   <PropertyGroup>
