@@ -26,6 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up .NET
@@ -48,11 +49,32 @@ jobs:
         shell: pwsh
         run: ./scripts/verify-auth-manifest.ps1 -Configuration Release -OutputPath '${{ runner.temp }}/auth-manifest.json'
 
-      - name: Verify package readiness
+      - name: Prepare package readiness verification
+        shell: pwsh
+        run: ./scripts/verify-auth-packages.ps1 -Configuration Release -Phase Prepare -OutputPath '${{ runner.temp }}/auth-package-verification'
+
+      - name: Restore package verification consumer
         shell: pwsh
         env:
           GITHUB_PACKAGES_TOKEN: ${{ github.token }}
-        run: ./scripts/verify-auth-packages.ps1 -Configuration Release
+        run: >-
+          dotnet restore '${{ runner.temp }}/auth-package-verification/consumer/AuthPackageConsumer.csproj'
+          --configfile '${{ runner.temp }}/auth-package-verification/consumer/nuget.config'
+          --packages '${{ runner.temp }}/auth-package-verification/consumer/packages'
+
+      - name: Complete package readiness verification
+        shell: pwsh
+        run: ./scripts/verify-auth-packages.ps1 -Configuration Release -Phase Complete -OutputPath '${{ runner.temp }}/auth-package-verification'
+
+      - name: Clean package readiness verification
+        if: always()
+        shell: pwsh
+        run: |
+          $verificationRoot = '${{ runner.temp }}/auth-package-verification'
+          $marker = Join-Path $verificationRoot '.auth-package-verification'
+          if (Test-Path -LiteralPath $marker) {
+            Remove-Item -LiteralPath $verificationRoot -Recurse -Force
+          }
 
   gate:
     name: Required CI gate
