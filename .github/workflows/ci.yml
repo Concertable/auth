@@ -185,12 +185,41 @@ jobs:
           }
           Remove-Item -LiteralPath '${{ runner.temp }}/auth-image-evidence' -Recurse -Force -ErrorAction SilentlyContinue
 
+  release-candidate:
+    name: Prepare Auth release candidate without publishing
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: 10.x
+
+      - name: Prepare and verify release candidate without publishing
+        shell: pwsh
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+        run: >-
+          ./scripts/verify-auth-release-candidate.ps1
+          -Configuration Release
+          -OutputPath '${{ runner.temp }}/auth-release-candidate'
+
   gate:
     name: Required CI gate
     if: always()
     needs:
       - verify
       - images
+      - release-candidate
     runs-on: ubuntu-latest
     permissions: {}
 
@@ -199,6 +228,7 @@ jobs:
         env:
           VERIFY_RESULT: ${{ needs.verify.result }}
           IMAGES_RESULT: ${{ needs.images.result }}
+          RELEASE_CANDIDATE_RESULT: ${{ needs.release-candidate.result }}
         run: |
           if [ "$VERIFY_RESULT" != "success" ]; then
             echo "::error::Credentialed verification did not complete successfully ($VERIFY_RESULT)."
@@ -206,5 +236,9 @@ jobs:
           fi
           if [ "$IMAGES_RESULT" != "success" ]; then
             echo "::error::Image verification did not complete successfully ($IMAGES_RESULT)."
+            exit 1
+          fi
+          if [ "$RELEASE_CANDIDATE_RESULT" != "success" ]; then
+            echo "::error::Release-candidate verification did not complete successfully ($RELEASE_CANDIDATE_RESULT)."
             exit 1
           fi

@@ -50,3 +50,18 @@ pwsh ./scripts/verify-auth-images.ps1
 
 CI additionally performs source/image secret scans, rejects critical vulnerabilities, and validates a
 CycloneDX SBOM for each image. Publishing, signing, and release tags remain separate cutover actions.
+
+## Verifying release-candidate readiness
+
+The release-candidate verifier composes the two package and two image seams at one MinVer version. It builds
+a clean-consumer proof, saves both images without pushing them, runs source/image secret and critical
+vulnerability scans, generates CycloneDX SBOMs, and validates a machine-readable manifest of every artifact
+and digest. By default the marked temporary bundle and all local image tags are removed after validation:
+
+```sh
+pwsh ./scripts/verify-auth-release-candidate.ps1
+```
+
+Use `-OutputPath <path> -KeepArtifacts` only when the local bundle needs inspection. The bundle is evidence
+for the future organization-owned publisher; this repository does not currently contain or invoke a
+publication, signing, tagging, release, or deployment workflow.

@@ -2,6 +2,7 @@
 param(
     [string] $RuntimeImage = "concertable/auth:verification-$PID",
     [string] $MigrationImage = "concertable/auth-operational-store-migration:verification-$PID",
+    [string] $BuildVersion,
     [switch] $KeepImages
 )
 
@@ -14,7 +15,12 @@ $revision = (& git -C $repositoryRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($revision)) {
     throw 'Could not resolve the Auth source revision.'
 }
-$buildVersion = "0.0.0-local.$($revision.Substring(0, 12))"
+if ([string]::IsNullOrWhiteSpace($BuildVersion)) {
+    $buildVersion = "0.0.0-local.$($revision.Substring(0, 12))"
+}
+else {
+    $buildVersion = $BuildVersion
+}
 
 $packageToken = $env:GITHUB_PACKAGES_TOKEN
 Remove-Item Env:GITHUB_PACKAGES_TOKEN -ErrorAction SilentlyContinue
