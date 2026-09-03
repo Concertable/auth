@@ -7,6 +7,4 @@ public static class AuthConstants
     public const string ServiceName = "concertable-auth";
 
     public const int ContainerPort = 8080;
-
-    public static readonly string ContainerHttpsUrl = $"https://+:{ContainerPort}";
 }
