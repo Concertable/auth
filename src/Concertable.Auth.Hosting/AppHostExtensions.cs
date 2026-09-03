@@ -29,14 +29,6 @@ public static class AppHostExtensions
         auth.WithHttpsDeveloperCertificate();
 #pragma warning restore ASPIRECERTIFICATES001
 
-        // The image binds HTTP only (ASPNETCORE_HTTP_PORTS=8080 and no HTTPS port), so the certificate
-        // alone left Kestrel serving plaintext on the port every AppHost declares as its `https`
-        // endpoint: an https consumer got `Cannot determine the frame size or a corrupted frame was
-        // received`. ASPNETCORE_URLS outranks ASPNETCORE_HTTP_PORTS, so this is what actually opens TLS
-        // there. Run mode only, so a published manifest never inherits the developer certificate.
-        if (builder.ExecutionContext.IsRunMode)
-            auth.WithEnvironment("ASPNETCORE_URLS", AuthConstants.ContainerHttpsUrl);
-
         auth.WithEnvironment("Auth__Authority", auth.GetEndpoint("https"));
         foreach (var client in LocalSpaSurfaces.Authenticated)
             auth.WithLocalSpaClient(client);
