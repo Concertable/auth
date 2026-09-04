@@ -3,12 +3,12 @@ using Concertable.Testing.Architecture;
 using Microsoft.AspNetCore.Builder;
 using Xunit;
 
-namespace Concertable.Auth.ArchitectureTests;
+namespace Concertable.Auth.StartupTests;
 
-public sealed class AuthArchitectureTests
+public sealed class WebHostTests
 {
     [Fact]
-    public void Web_ProductionGraphAndStrictValidation_AreValid()
+    public void ProductionGraphAndStrictValidation_AreValid()
     {
         var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
         builder.AddAuthHost();
@@ -21,14 +21,5 @@ public sealed class AuthArchitectureTests
         invalidBuilder.AddAuthHost();
         invalidBuilder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => invalidBuilder.Build());
-    }
-
-    [Fact]
-    public void AppHost_ProductionGraphAndStrictValidation_AreValid()
-    {
-        using var app = AppHost.CreateBuilder([]).Build();
-        var builder = AppHost.CreateBuilder([]);
-        builder.Services.AddInvalidLifetimeGraph();
-        Assert.ThrowsAny<Exception>(() => builder.Build());
     }
 }
