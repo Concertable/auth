@@ -31,8 +31,6 @@ public static class AppHostExtensions
 #pragma warning restore ASPIRECERTIFICATES001
 
             auth.WithEnvironment("Auth__Authority", auth.GetEndpoint("https"));
-            foreach (var client in LocalSpaSurfaces.Authenticated)
-                auth.WithLocalSpaClient(client);
 
             var lanIp = builder.Configuration["MobileLanIp"];
             if (!string.IsNullOrEmpty(lanIp))
@@ -57,8 +55,6 @@ public static class AppHostExtensions
                               .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");
 
             auth.WithEnvironment("Auth__Authority", auth.GetEndpoint("https"));
-            foreach (var client in LocalSpaSurfaces.Authenticated)
-                auth.WithLocalSpaClient(client);
 
             var lanIp = builder.Configuration["MobileLanIp"];
             if (!string.IsNullOrEmpty(lanIp))
@@ -71,19 +67,4 @@ public static class AppHostExtensions
         }
     }
 
-    extension<T>(IResourceBuilder<T> auth)
-        where T : IResourceWithEnvironment
-    {
-        public IResourceBuilder<T> WithLocalSpaClient(LocalSpaSurface surface)
-        {
-            var client = surface.AuthClient
-                ?? throw new ArgumentException(
-                    $"Local SPA surface '{surface.ResourceName}' does not define an auth client.",
-                    nameof(surface));
-
-            return auth.WithEnvironment($"Auth__SpaClients__{client}__RedirectUri", $"{surface.Origin}/auth/callback")
-                       .WithEnvironment($"Auth__SpaClients__{client}__PostLogoutRedirectUri", surface.Origin)
-                       .WithEnvironment($"Auth__SpaClients__{client}__AllowedCorsOrigins__0", surface.Origin);
-        }
-    }
 }
