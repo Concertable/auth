@@ -30,12 +30,8 @@ public static class FrontendAuthExtensions
             });
         }
 
-        public IResourceBuilder<T> WithMobilePublicUrl() =>
-            auth.WithEnvironment(context =>
-            {
-                if (context.EnvironmentVariables.TryGetValue("services__auth__https__0", out var authUrl))
-                    context.EnvironmentVariables["Auth__PublicUrl"] = authUrl;
-            });
+        public IResourceBuilder<T> WithMobilePublicUrl(EndpointReference publicEndpoint) =>
+            auth.WithEnvironment("Auth__PublicUrl", publicEndpoint);
 
         public IResourceBuilder<T> WithSpaClient(SpaSurface surface)
         {
