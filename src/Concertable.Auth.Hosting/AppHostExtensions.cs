@@ -21,6 +21,14 @@ public static class AppHostExtensions
                           .WaitFor(asb)
                           .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");
 
+        // The pinned pre-cutover Auth image serves HTTPS on its container port but ships no certificate.
+        // Hand it the ASP.NET Core development certificate at run time (dev + E2E); publish mode is
+        // unaffected. This bridge is removed with the `--user root` argument once a corrected Auth image
+        // and digest land (see RT3 progress notes).
+#pragma warning disable ASPIRECERTIFICATES001 // experimental API; scoped to the temporary Auth image bridge
+        auth.WithHttpsDeveloperCertificate();
+#pragma warning restore ASPIRECERTIFICATES001
+
         auth.WithEnvironment("Auth__Authority", auth.GetEndpoint("https"));
         foreach (var client in LocalSpaSurfaces.Authenticated)
             auth.WithLocalSpaClient(client);
