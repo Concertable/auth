@@ -8,6 +8,28 @@ public static class FrontendAuthExtensions
     extension<T>(IResourceBuilder<T> auth)
         where T : IResourceWithEnvironment
     {
+        public IResourceBuilder<T> WithSpaClients(IReadOnlyList<SpaSurface> surfaces)
+        {
+            var clients = surfaces.Select(surface => (Surface: surface, Client: surface.AuthClient
+                ?? throw new ArgumentException(
+                    $"SPA surface '{surface.ResourceName}' does not define an auth client.",
+                    nameof(surfaces)))).ToArray();
+
+            return auth.WithEnvironment(context =>
+            {
+                foreach (var key in context.EnvironmentVariables.Keys
+                    .Where(key => key.StartsWith("Auth__SpaClients__", StringComparison.Ordinal)).ToArray())
+                    context.EnvironmentVariables.Remove(key);
+
+                foreach (var (surface, client) in clients)
+                {
+                    context.EnvironmentVariables[$"Auth__SpaClients__{client}__RedirectUri"] = $"{surface.Origin}/auth/callback";
+                    context.EnvironmentVariables[$"Auth__SpaClients__{client}__PostLogoutRedirectUri"] = surface.Origin;
+                    context.EnvironmentVariables[$"Auth__SpaClients__{client}__AllowedCorsOrigins__0"] = surface.Origin;
+                }
+            });
+        }
+
         public IResourceBuilder<T> WithMobilePublicUrl() =>
             auth.WithEnvironment(context =>
             {
