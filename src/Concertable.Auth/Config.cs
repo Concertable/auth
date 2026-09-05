@@ -106,10 +106,11 @@ public static class Config
             (nameof(SpaClientSettings.Admin), ClientIds.Admin, spa.Admin),
         ];
 
-        if (spa.EnabledClients is null)
+        if (!spa.RestrictToEnabledClients)
             return definitions.Select(definition => WebClient(definition.ClientId, definition.Settings)).ToArray();
 
-        var enabled = spa.EnabledClients.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var enabled = spa.EnabledClients?.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ?? [];
         var unknown = enabled
             .Except(definitions.Select(definition => definition.Name), StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase)

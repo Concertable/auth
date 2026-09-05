@@ -21,6 +21,7 @@ public static class FrontendAuthExtensions
                     .Where(key => key.StartsWith("Auth__SpaClients__", StringComparison.Ordinal)).ToArray())
                     context.EnvironmentVariables.Remove(key);
 
+                context.EnvironmentVariables["Auth__SpaClients__RestrictToEnabledClients"] = "true";
                 for (var index = 0; index < clients.Length; index++)
                 {
                     var (surface, client) = clients[index];
