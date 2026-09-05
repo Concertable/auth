@@ -58,6 +58,7 @@ public sealed class AuthArchitectureTests
             .ToDictionary();
 
         Assert.Equal(3, spaClients.Count);
+        Assert.Equal("true", environment["Auth__SpaClients__RestrictToEnabledClients"]);
         Assert.Equal("Customer", environment["Auth__SpaClients__EnabledClients__0"]);
         Assert.DoesNotContain("Auth__SpaClients__EnabledClients__1", environment.Keys);
         Assert.DoesNotContain("Auth__SpaClients__Venue__RedirectUri", environment.Keys);
@@ -68,25 +69,41 @@ public sealed class AuthArchitectureTests
     }
 
     [Theory]
+    [InlineData(null, null)]
     [InlineData("Customer", "customer-web")]
     [InlineData("Venue,Artist,Admin", "venue-web,artist-web,admin")]
     [InlineData("Customer,Venue,Artist,Admin", "customer-web,venue-web,artist-web,admin")]
-    public async Task Web_EnabledSpaClients_FilterBundledDefaults(string enabledNames, string expectedClientIds)
+    public async Task Web_EnabledSpaClients_FilterBundledDefaults(string? enabledNames, string? expectedClientIds)
     {
         var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
-        var enabled = enabledNames.Split(',');
-        builder.Configuration.AddInMemoryCollection(enabled
+        var enabled = enabledNames?.Split(',') ?? [];
+        var configuration = enabled
             .Select((name, index) => new KeyValuePair<string, string?>(
-                $"Auth:SpaClients:EnabledClients:{index}", name)));
+                $"Auth:SpaClients:EnabledClients:{index}", name))
+            .Append(new("Auth:SpaClients:RestrictToEnabledClients", "true"));
+        builder.Configuration.AddInMemoryCollection(configuration);
         builder.AddAuthHost();
         using var app = builder.Build();
         var clientStore = app.Services.GetRequiredService<IClientStore>();
-        var expected = expectedClientIds.Split(',').ToHashSet(StringComparer.Ordinal);
+        var expected = expectedClientIds?.Split(',').ToHashSet(StringComparer.Ordinal)
+            ?? [];
 
         foreach (var clientId in new[] { ClientIds.CustomerWeb, ClientIds.VenueWeb, ClientIds.ArtistWeb, ClientIds.Admin })
         {
             var client = await clientStore.FindClientByIdAsync(clientId);
             Assert.Equal(expected.Contains(clientId), client is not null);
         }
+    }
+
+    [Fact]
+    public async Task Web_AbsentSpaClientRestriction_PreservesBundledDefaults()
+    {
+        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        builder.AddAuthHost();
+        using var app = builder.Build();
+        var clientStore = app.Services.GetRequiredService<IClientStore>();
+
+        foreach (var clientId in new[] { ClientIds.CustomerWeb, ClientIds.VenueWeb, ClientIds.ArtistWeb, ClientIds.Admin })
+            Assert.NotNull(await clientStore.FindClientByIdAsync(clientId));
     }
 }
