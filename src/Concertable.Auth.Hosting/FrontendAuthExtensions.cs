@@ -21,8 +21,10 @@ public static class FrontendAuthExtensions
                     .Where(key => key.StartsWith("Auth__SpaClients__", StringComparison.Ordinal)).ToArray())
                     context.EnvironmentVariables.Remove(key);
 
-                foreach (var (surface, client) in clients)
+                for (var index = 0; index < clients.Length; index++)
                 {
+                    var (surface, client) = clients[index];
+                    context.EnvironmentVariables[$"Auth__SpaClients__EnabledClients__{index}"] = client;
                     context.EnvironmentVariables[$"Auth__SpaClients__{client}__RedirectUri"] = $"{surface.Origin}/auth/callback";
                     context.EnvironmentVariables[$"Auth__SpaClients__{client}__PostLogoutRedirectUri"] = surface.Origin;
                     context.EnvironmentVariables[$"Auth__SpaClients__{client}__AllowedCorsOrigins__0"] = surface.Origin;

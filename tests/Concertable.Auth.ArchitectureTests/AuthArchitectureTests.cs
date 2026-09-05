@@ -1,9 +1,13 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Concertable.Auth;
+using Concertable.Auth.Contracts;
 using Concertable.Auth.Hosting;
 using Concertable.Testing.Architecture;
+using Duende.IdentityServer.Stores;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -50,12 +54,39 @@ public sealed class AuthArchitectureTests
                 NullLogger.Instance, CancellationToken.None);
         var environment = configuration.EnvironmentVariables.ToDictionary();
         var spaClients = environment
-            .Where(pair => pair.Key.StartsWith("Auth__SpaClients__", StringComparison.Ordinal))
+            .Where(pair => pair.Key.StartsWith("Auth__SpaClients__Customer__", StringComparison.Ordinal))
             .ToDictionary();
 
         Assert.Equal(3, spaClients.Count);
+        Assert.Equal("Customer", environment["Auth__SpaClients__EnabledClients__0"]);
+        Assert.DoesNotContain("Auth__SpaClients__EnabledClients__1", environment.Keys);
+        Assert.DoesNotContain("Auth__SpaClients__Venue__RedirectUri", environment.Keys);
+        Assert.DoesNotContain("Auth__SpaClients__Artist__AllowedCorsOrigins__0", environment.Keys);
         Assert.Equal("https://localhost:5174/auth/callback", spaClients["Auth__SpaClients__Customer__RedirectUri"]);
         Assert.Equal("https://localhost:5174", spaClients["Auth__SpaClients__Customer__PostLogoutRedirectUri"]);
         Assert.Equal("https://localhost:5174", spaClients["Auth__SpaClients__Customer__AllowedCorsOrigins__0"]);
+    }
+
+    [Theory]
+    [InlineData("Customer", "customer-web")]
+    [InlineData("Venue,Artist,Admin", "venue-web,artist-web,admin")]
+    [InlineData("Customer,Venue,Artist,Admin", "customer-web,venue-web,artist-web,admin")]
+    public async Task Web_EnabledSpaClients_FilterBundledDefaults(string enabledNames, string expectedClientIds)
+    {
+        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        var enabled = enabledNames.Split(',');
+        builder.Configuration.AddInMemoryCollection(enabled
+            .Select((name, index) => new KeyValuePair<string, string?>(
+                $"Auth:SpaClients:EnabledClients:{index}", name)));
+        builder.AddAuthHost();
+        using var app = builder.Build();
+        var clientStore = app.Services.GetRequiredService<IClientStore>();
+        var expected = expectedClientIds.Split(',').ToHashSet(StringComparer.Ordinal);
+
+        foreach (var clientId in new[] { ClientIds.CustomerWeb, ClientIds.VenueWeb, ClientIds.ArtistWeb, ClientIds.Admin })
+        {
+            var client = await clientStore.FindClientByIdAsync(clientId);
+            Assert.Equal(expected.Contains(clientId), client is not null);
+        }
     }
 }
