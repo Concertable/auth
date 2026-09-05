@@ -26,8 +26,8 @@ public sealed class AuthArchitectureTests
     [Fact]
     public void AppHost_ProductionGraphAndStrictValidation_AreValid()
     {
-        using var app = AuthAppHost.CreateBuilder([]).Build();
-        var builder = AuthAppHost.CreateBuilder([]);
+        using var app = AppHost.CreateBuilder([]).Build();
+        var builder = AppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => builder.Build());
     }
