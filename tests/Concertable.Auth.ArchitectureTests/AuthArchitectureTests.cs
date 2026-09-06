@@ -47,7 +47,7 @@ public sealed class AuthArchitectureTests
         var auth = builder.AddContainer("auth-spa-clients", "example.invalid/auth")
                           .WithEnvironment("Auth__SpaClients__Venue__RedirectUri", "https://stale.example/auth/callback")
                           .WithEnvironment("Auth__SpaClients__Artist__AllowedCorsOrigins__0", "https://stale.example")
-                          .WithSpaClients([new SpaSurface("customer", 5174, "Customer")]);
+                          .WithSpaClients([(new SpaSurface("customer", 5174), "Customer")]);
         var configuration = await ExecutionConfigurationBuilder.Create(auth.Resource)
             .WithEnvironmentVariablesConfig()
             .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish),
@@ -93,6 +93,21 @@ public sealed class AuthArchitectureTests
             var client = await clientStore.FindClientByIdAsync(clientId);
             Assert.Equal(expected.Contains(clientId), client is not null);
         }
+    }
+
+    [Fact]
+    public void Web_UnknownEnabledSpaClient_Throws()
+    {
+        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        builder.Configuration.AddInMemoryCollection([
+            new("Auth:SpaClients:RestrictToEnabledClients", "true"),
+            new("Auth:SpaClients:EnabledClients:0", "Customer"),
+            new("Auth:SpaClients:EnabledClients:1", "Business")
+        ]);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.AddAuthHost());
+
+        Assert.Contains("Business", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
