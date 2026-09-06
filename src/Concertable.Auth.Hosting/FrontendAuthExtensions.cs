@@ -8,12 +8,17 @@ public static class FrontendAuthExtensions
     extension<T>(IResourceBuilder<T> auth)
         where T : IResourceWithEnvironment
     {
-        public IResourceBuilder<T> WithSpaClients(IReadOnlyList<SpaSurface> surfaces)
+        public IResourceBuilder<T> WithSpaClients(IReadOnlyList<(global::SpaSurface Surface, string ClientName)> registrations)
         {
-            var clients = surfaces.Select(surface => (Surface: surface, Client: surface.AuthClient
-                ?? throw new ArgumentException(
-                    $"SPA surface '{surface.ResourceName}' does not define an auth client.",
-                    nameof(surfaces)))).ToArray();
+            var clients = registrations.Select(registration =>
+            {
+                if (string.IsNullOrWhiteSpace(registration.ClientName))
+                    throw new ArgumentException(
+                        $"SPA surface '{registration.Surface.ResourceName}' does not define an auth client.",
+                        nameof(registrations));
+
+                return registration;
+            }).ToArray();
 
             return auth.WithEnvironment(context =>
             {
@@ -36,12 +41,13 @@ public static class FrontendAuthExtensions
         public IResourceBuilder<T> WithMobilePublicUrl(EndpointReference publicEndpoint) =>
             auth.WithEnvironment("Auth__PublicUrl", publicEndpoint);
 
-        public IResourceBuilder<T> WithSpaClient(SpaSurface surface)
+        public IResourceBuilder<T> WithSpaClient((global::SpaSurface Surface, string ClientName) registration)
         {
-            var client = surface.AuthClient
-                ?? throw new ArgumentException(
-                    $"Local SPA surface '{surface.ResourceName}' does not define an auth client.",
-                    nameof(surface));
+            var (surface, client) = registration;
+            if (string.IsNullOrWhiteSpace(client))
+                throw new ArgumentException(
+                    $"SPA surface '{surface.ResourceName}' does not define an auth client.",
+                    nameof(registration));
 
             return auth.WithEnvironment($"Auth__SpaClients__{client}__RedirectUri", $"{surface.Origin}/auth/callback")
                        .WithEnvironment($"Auth__SpaClients__{client}__PostLogoutRedirectUri", surface.Origin)
