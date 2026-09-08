@@ -11,6 +11,7 @@ public static class AppHost
         var asb = builder.AddServiceBus();
         asb.Topology().AddAuthTopology().RunAsEmulator();
         var auth = builder.AddAuth<Projects.Concertable_Auth>(authDb, asb);
+        auth.WithSpaClients([]);
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
         return builder;
     }
