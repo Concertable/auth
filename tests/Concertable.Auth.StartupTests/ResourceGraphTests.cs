@@ -46,4 +46,24 @@ public sealed class ResourceGraphTests
         Assert.Equal("https://localhost:5174", spaClients["Auth__SpaClients__Customer__PostLogoutRedirectUri"]);
         Assert.Equal("https://localhost:5174", spaClients["Auth__SpaClients__Customer__AllowedCorsOrigins__0"]);
     }
+
+    [Fact]
+    public async Task DeclaresAnExplicitSpaClientRoster()
+    {
+        var builder = AppHost.CreateBuilder([]);
+        var auth = builder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var environment = new Dictionary<string, object>();
+        var context = new EnvironmentCallbackContext(
+            new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
+            auth, environment, CancellationToken.None);
+        foreach (var annotation in auth.Annotations.OfType<EnvironmentCallbackAnnotation>().ToArray())
+            await annotation.Callback(context);
+
+        Assert.Equal("true", environment["Auth__SpaClients__RestrictToEnabledClients"]);
+        Assert.DoesNotContain(environment.Keys,
+            key => key.StartsWith("Auth__SpaClients__EnabledClients__", StringComparison.Ordinal));
+        Assert.DoesNotContain(environment.Keys,
+            key => key.StartsWith("Auth__SpaClients__", StringComparison.Ordinal)
+                && key != "Auth__SpaClients__RestrictToEnabledClients");
+    }
 }
