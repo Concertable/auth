@@ -121,4 +121,24 @@ public sealed class AuthArchitectureTests
         foreach (var clientId in new[] { ClientIds.CustomerWeb, ClientIds.VenueWeb, ClientIds.ArtistWeb, ClientIds.Admin })
             Assert.NotNull(await clientStore.FindClientByIdAsync(clientId));
     }
+
+    [Fact]
+    public async Task AppHost_DeclaresAnExplicitSpaClientRoster()
+    {
+        var builder = global::AppHost.CreateBuilder([]);
+        var auth = builder.Resources.Single(resource => resource.Name == AuthConstants.Resource);
+        var environment = new Dictionary<string, object>();
+        var context = new EnvironmentCallbackContext(
+            new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
+            auth, environment, CancellationToken.None);
+        foreach (var annotation in auth.Annotations.OfType<EnvironmentCallbackAnnotation>().ToArray())
+            await annotation.Callback(context);
+
+        Assert.Equal("true", environment["Auth__SpaClients__RestrictToEnabledClients"]);
+        Assert.DoesNotContain(environment.Keys,
+            key => key.StartsWith("Auth__SpaClients__EnabledClients__", StringComparison.Ordinal));
+        Assert.DoesNotContain(environment.Keys,
+            key => key.StartsWith("Auth__SpaClients__", StringComparison.Ordinal)
+                && key != "Auth__SpaClients__RestrictToEnabledClients");
+    }
 }
