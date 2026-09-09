@@ -9,4 +9,5 @@ public static class ClientIds
     public const string VenueMobile = "venue-mobile";
     public const string ArtistWeb = "artist-web";
     public const string ArtistMobile = "artist-mobile";
+    public const string Test = "concertable-test";
 }
