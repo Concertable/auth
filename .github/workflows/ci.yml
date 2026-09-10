@@ -45,6 +45,12 @@ jobs:
       - name: Test
         run: dotnet test Concertable.Auth.slnx --configuration Release --no-build --no-restore
 
+      - name: Verify migrations match the model
+        shell: pwsh
+        run: |
+          dotnet tool restore
+          ./initial-migrations.ps1 -Check
+
       - name: Verify AppHost manifest
         shell: pwsh
         run: ./scripts/verify-auth-manifest.ps1 -Configuration Release -OutputPath '${{ runner.temp }}/auth-manifest.json'
