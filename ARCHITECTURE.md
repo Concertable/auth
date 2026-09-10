@@ -28,11 +28,11 @@ The `clientId` is **not stored** in Auth — it is forwarded on the integration 
 ## CredentialRegisteredEvent
 
 ```csharp
-// Concertable.Auth.Contracts/Events/CredentialRegisteredEvent.cs
+// src/Concertable.Auth.Contracts/Events/CredentialRegisteredEvent.cs
 public record CredentialRegisteredEvent(Guid UserId, string Email, string ClientId) : IIntegrationEvent;
 ```
 
-`ClientId` values are defined in `Concertable.Auth.Contracts/ClientIds.cs`:
+`ClientId` values are defined in `src/Concertable.Auth.Contracts/ClientIds.cs`:
 
 | ClientId | Surface |
 |---|---|
