@@ -23,7 +23,7 @@
 
   <!-- Shared platform stays on feed packages; Auth.Contracts is owned by this repository. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" />
+    <ProjectReference Include="..\Concertable.Auth.Contracts\Concertable.Auth.Contracts.csproj" />
     <PackageReference Include="Concertable.Kernel" />
     <PackageReference Include="Concertable.Seed.Shared" />
     <PackageReference Include="Concertable.Seed.Identity" />
