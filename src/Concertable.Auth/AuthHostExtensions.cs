@@ -125,10 +125,9 @@ public static class AuthHostExtensions
                 Config.CustomerMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Customer"]),
                 Config.VenueMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
                 Config.ArtistMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
-                Config.ServiceClient("concertable-b2b", RequireSecret("ServiceAuth:B2BClientSecret"), "payment:write"),
-                Config.ServiceClient("concertable-customer", RequireSecret("ServiceAuth:CustomerClientSecret"), "payment:write"),
-                Config.ServiceClient("concertable-auth", RequireSecret("ServiceAuth:AuthClientSecret"), "user:claims")
             };
+            clients.AddRange(ServiceClients.All.Select(service =>
+                Config.ServiceClient(service.Id, RequireSecret(service.SecretConfigKey), service.GrantedScope.Id())));
             if (builder.Environment.IsE2E())
                 clients.Add(Config.TestClient);
 

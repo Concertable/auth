@@ -8,39 +8,35 @@ namespace Concertable.Auth;
 
 public static class Config
 {
-    public static IReadOnlyList<ApiScope> ApiScopes =>
-    [
-        new ApiScope("concertable.b2b.api",      "Concertable B2B API"),
-        new ApiScope("concertable.customer.api",  "Concertable Customer API"),
-        new ApiScope("concertable.search.api",    "Concertable Search API"),
-        new ApiScope("payment:write",             "Payment write access"),
-        new ApiScope("user:claims",               "User claims access"),
-    ];
+    private static readonly IReadOnlyDictionary<AuthScope, string> ScopeDisplayNames = new Dictionary<AuthScope, string>
+    {
+        [AuthScope.B2BApi] = "Concertable B2B API",
+        [AuthScope.CustomerApi] = "Concertable Customer API",
+        [AuthScope.SearchApi] = "Concertable Search API",
+        [AuthScope.PaymentWrite] = "Payment write access",
+        [AuthScope.UserClaims] = "User claims access",
+    };
 
+    private static readonly IReadOnlyDictionary<AuthResource, string> ResourceDisplayNames = new Dictionary<AuthResource, string>
+    {
+        [AuthResource.B2B] = "Concertable B2B API",
+        [AuthResource.Customer] = "Concertable Customer API",
+        [AuthResource.Search] = "Concertable Search API",
+        [AuthResource.Payment] = "Concertable Payment API",
+    };
+
+    public static IReadOnlyList<ApiScope> ApiScopes =>
+        AuthScopes.All.Select(scope => new ApiScope(scope.Id(), ScopeDisplayNames[scope])).ToArray();
+
+    /* B2B is identity-only: `email` comes from the local Auth credential, and authority is the
+       request-scoped active tenant (X-Tenant-Id → membership), never a token claim. No `role`, no
+       `owner` — one claim can't model a multi-tenant user. `owner` stays Customer-only. */
     public static IReadOnlyList<ApiResource> ApiResources =>
-    [
-        /* B2B is identity-only: `email` comes from the local Auth credential, and authority is the
-           request-scoped active tenant (X-Tenant-Id → membership), never a token claim. No `role`, no
-           `owner` — one claim can't model a multi-tenant user. `owner` stays Customer-only. */
-        new ApiResource("concertable.b2b.api", "Concertable B2B API")
+        AuthResources.All.Select(resource => new ApiResource(resource.Audience(), ResourceDisplayNames[resource])
         {
-            Scopes = { "concertable.b2b.api" },
-            UserClaims = { "email" }
-        },
-        new ApiResource("concertable.customer.api", "Concertable Customer API")
-        {
-            Scopes = { "concertable.customer.api", "user:claims" },
-            UserClaims = { "role", "owner" }
-        },
-        new ApiResource("concertable.search.api", "Concertable Search API")
-        {
-            Scopes = { "concertable.search.api" }
-        },
-        new ApiResource("concertable.payment.api", "Concertable Payment API")
-        {
-            Scopes = { "payment:write" }
-        },
-    ];
+            Scopes = resource.AcceptedScopes().Select(scope => scope.Id()).ToList(),
+            UserClaims = resource.IncludedClaims().ToList(),
+        }).ToArray();
 
     public static IReadOnlyList<IdentityResource> IdentityResources =>
     [
@@ -50,23 +46,26 @@ public static class Config
     ];
 
     public static Client CustomerMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient(ClientIds.CustomerMobile, "concertable-customer://", expoGoRedirectUri);
+        MobileClient(InteractiveClient.CustomerMobile, expoGoRedirectUri);
 
     public static Client VenueMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient(ClientIds.VenueMobile, "concertable-business://", expoGoRedirectUri);
+        MobileClient(InteractiveClient.VenueMobile, expoGoRedirectUri);
 
     public static Client ArtistMobileClient(string? expoGoRedirectUri = null) =>
-        MobileClient(ClientIds.ArtistMobile, "concertable-business://", expoGoRedirectUri);
+        MobileClient(InteractiveClient.ArtistMobile, expoGoRedirectUri);
 
-    private static Client MobileClient(string clientId, string scheme, string? expoGoRedirectUri)
+    private static Client MobileClient(InteractiveClient client, string? expoGoRedirectUri)
     {
+        var info = client.Info();
+        var scheme = info.MobileScheme
+            ?? throw new InvalidOperationException($"{client} has no mobile redirect scheme.");
         var redirectUris = new HashSet<string> { scheme };
         if (!string.IsNullOrEmpty(expoGoRedirectUri))
             redirectUris.Add(expoGoRedirectUri);
 
         return new Client
         {
-            ClientId = clientId,
+            ClientId = info.Id,
 
             AllowedGrantTypes = GrantTypes.Code,
             RequirePkce = true,
@@ -75,9 +74,9 @@ public static class Config
             RedirectUris = redirectUris,
             PostLogoutRedirectUris = { scheme },
 
-            AllowedScopes = clientId == ClientIds.CustomerMobile
-                ? new HashSet<string> { "openid", "profile", "concertable.customer.api" }
-                : new HashSet<string> { "openid", "profile", "concertable.b2b.api" },
+            AllowedScopes = client == InteractiveClient.CustomerMobile
+                ? new HashSet<string> { "openid", "profile", AuthScope.CustomerApi.Id() }
+                : new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id() },
 
             AllowOfflineAccess = true,
             AccessTokenLifetime = 900,
@@ -90,24 +89,24 @@ public static class Config
 
     public static Client TestClient => new Client
     {
-        ClientId = "concertable-test",
+        ClientId = InteractiveClient.E2ETest.Info().Id,
         AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
         RequireClientSecret = false,
-        AllowedScopes = { "openid", "concertable.b2b.api", "concertable.customer.api", "concertable.search.api" },
+        AllowedScopes = { "openid", AuthScope.B2BApi.Id(), AuthScope.CustomerApi.Id(), AuthScope.SearchApi.Id() },
     };
 
     public static IReadOnlyList<Client> WebClients(SpaClientSettings spa)
     {
-        (string Name, string ClientId, WebClientSettings Settings)[] definitions =
+        (string Name, InteractiveClient Client, WebClientSettings Settings)[] definitions =
         [
-            (nameof(SpaClientSettings.Customer), ClientIds.CustomerWeb, spa.Customer),
-            (nameof(SpaClientSettings.Venue), ClientIds.VenueWeb, spa.Venue),
-            (nameof(SpaClientSettings.Artist), ClientIds.ArtistWeb, spa.Artist),
-            (nameof(SpaClientSettings.Admin), ClientIds.Admin, spa.Admin),
+            (nameof(SpaClientSettings.Customer), InteractiveClient.CustomerBrowser, spa.Customer),
+            (nameof(SpaClientSettings.Venue), InteractiveClient.VenueBrowser, spa.Venue),
+            (nameof(SpaClientSettings.Artist), InteractiveClient.ArtistBrowser, spa.Artist),
+            (nameof(SpaClientSettings.Admin), InteractiveClient.Admin, spa.Admin),
         ];
 
         if (!spa.RestrictToEnabledClients)
-            return definitions.Select(definition => WebClient(definition.ClientId, definition.Settings)).ToArray();
+            return definitions.Select(definition => WebClient(definition.Client, definition.Settings)).ToArray();
 
         var enabled = spa.EnabledClients?.ToHashSet(StringComparer.OrdinalIgnoreCase)
             ?? [];
@@ -120,13 +119,13 @@ public static class Config
 
         return definitions
             .Where(definition => enabled.Contains(definition.Name))
-            .Select(definition => WebClient(definition.ClientId, definition.Settings))
+            .Select(definition => WebClient(definition.Client, definition.Settings))
             .ToArray();
     }
 
-    private static Client WebClient(string clientId, WebClientSettings settings) => new()
+    private static Client WebClient(InteractiveClient client, WebClientSettings settings) => new()
     {
-        ClientId = clientId,
+        ClientId = client.Info().Id,
 
         AllowedGrantTypes = GrantTypes.Code,
         RequirePkce = true,
@@ -136,9 +135,9 @@ public static class Config
         PostLogoutRedirectUris = [settings.PostLogoutRedirectUri],
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
-        AllowedScopes = clientId == ClientIds.CustomerWeb
-            ? new HashSet<string> { "openid", "profile", "roles", "concertable.customer.api", "concertable.search.api" }
-            : new HashSet<string> { "openid", "profile", "concertable.b2b.api" },
+        AllowedScopes = client == InteractiveClient.CustomerBrowser
+            ? new HashSet<string> { "openid", "profile", "roles", AuthScope.CustomerApi.Id(), AuthScope.SearchApi.Id() }
+            : new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id() },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,

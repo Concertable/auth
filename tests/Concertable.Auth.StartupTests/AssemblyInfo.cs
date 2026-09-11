@@ -1,6 +1,5 @@
 using Xunit;
 
 [assembly: AssemblyTrait("Category", "Startup")]
-
-// AddDeveloperSigningCredential writes one tempkey.jwk per output directory; parallel collections race it.
+// Serialized: AddAuthHost() writes a shared "tempkey.jwk" file; parallel classes race on it.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
