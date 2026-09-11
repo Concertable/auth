@@ -8,7 +8,7 @@ namespace Concertable.Auth;
 
 public static class Config
 {
-    public static IEnumerable<ApiScope> ApiScopes =>
+    public static IReadOnlyList<ApiScope> ApiScopes =>
     [
         new ApiScope("concertable.b2b.api",      "Concertable B2B API"),
         new ApiScope("concertable.customer.api",  "Concertable Customer API"),
@@ -17,7 +17,7 @@ public static class Config
         new ApiScope("user:claims",               "User claims access"),
     ];
 
-    public static IEnumerable<ApiResource> ApiResources =>
+    public static IReadOnlyList<ApiResource> ApiResources =>
     [
         /* B2B is identity-only: `email` comes from the local Auth credential, and authority is the
            request-scoped active tenant (X-Tenant-Id → membership), never a token claim. No `role`, no
@@ -42,7 +42,7 @@ public static class Config
         },
     ];
 
-    public static IEnumerable<IdentityResource> IdentityResources =>
+    public static IReadOnlyList<IdentityResource> IdentityResources =>
     [
         new IdentityResources.OpenId(),
         new IdentityResources.Profile(),
@@ -96,13 +96,33 @@ public static class Config
         AllowedScopes = { "openid", "concertable.b2b.api", "concertable.customer.api", "concertable.search.api" },
     };
 
-    public static IEnumerable<Client> WebClients(SpaClientSettings spa) =>
-    [
-        WebClient(ClientIds.CustomerWeb, spa.Customer),
-        WebClient(ClientIds.VenueWeb, spa.Venue),
-        WebClient(ClientIds.ArtistWeb, spa.Artist),
-        WebClient(ClientIds.Admin, spa.Admin),
-    ];
+    public static IReadOnlyList<Client> WebClients(SpaClientSettings spa)
+    {
+        (string Name, string ClientId, WebClientSettings Settings)[] definitions =
+        [
+            (nameof(SpaClientSettings.Customer), ClientIds.CustomerWeb, spa.Customer),
+            (nameof(SpaClientSettings.Venue), ClientIds.VenueWeb, spa.Venue),
+            (nameof(SpaClientSettings.Artist), ClientIds.ArtistWeb, spa.Artist),
+            (nameof(SpaClientSettings.Admin), ClientIds.Admin, spa.Admin),
+        ];
+
+        if (!spa.RestrictToEnabledClients)
+            return definitions.Select(definition => WebClient(definition.ClientId, definition.Settings)).ToArray();
+
+        var enabled = spa.EnabledClients?.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ?? [];
+        var unknown = enabled
+            .Except(definitions.Select(definition => definition.Name), StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (unknown.Length > 0)
+            throw new InvalidOperationException($"Unknown Auth SPA clients: {string.Join(", ", unknown)}.");
+
+        return definitions
+            .Where(definition => enabled.Contains(definition.Name))
+            .Select(definition => WebClient(definition.ClientId, definition.Settings))
+            .ToArray();
+    }
 
     private static Client WebClient(string clientId, WebClientSettings settings) => new()
     {

@@ -1,7 +1,7 @@
 using Aspire.Hosting;
 using Concertable.Auth.Hosting;
 
-public static class AuthAppHost
+public static class AppHost
 {
     public static IDistributedApplicationBuilder CreateBuilder(string[] args)
     {
@@ -11,6 +11,7 @@ public static class AuthAppHost
         var asb = builder.AddServiceBus();
         asb.Topology().AddAuthTopology().RunAsEmulator();
         var auth = builder.AddAuth<Projects.Concertable_Auth>(authDb, asb);
+        auth.WithSpaClients([]);
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
         return builder;
     }
