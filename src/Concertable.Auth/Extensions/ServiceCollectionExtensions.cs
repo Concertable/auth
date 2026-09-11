@@ -18,7 +18,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddRefitClient<TApi>()
             .ConfigureHttpClient(client => client.BaseAddress = new Uri(baseUrl.TrimEnd('/')))
-            .AddHttpMessageHandler(sp => new ServiceTokenHandler(sp.GetRequiredService<ITokenService>(), "user:claims"));
+            .AddHttpMessageHandler(sp => new ServiceTokenHandler(sp.GetRequiredService<ITokenService>(), AuthScope.UserClaims.Id()));
 
         services.AddScoped<IProfileClaimsProvider>(sp => new RemoteProfileClaimsProvider(
             source,
