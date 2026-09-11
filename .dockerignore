@@ -7,9 +7,9 @@
 !nuget.config
 !README.md
 
-!Concertable.Auth.Contracts/
-!Concertable.Auth.Contracts/**
 !src/
+!src/Concertable.Auth.Contracts/
+!src/Concertable.Auth.Contracts/**
 !src/Concertable.Auth/
 !src/Concertable.Auth/**
 !tools/

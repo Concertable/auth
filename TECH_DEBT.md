@@ -14,3 +14,9 @@ mint tokens. The shared harness should not solve this by depending on Auth runti
 
 **Resolves when:** one Auth-owned contract/configuration source defines the client ids and scope names,
 and both Auth registration and external consumers such as `TestTokenMinter` reuse it.
+
+**Progress:** `Concertable.Auth.Contracts.ClientIds.Test` and the new `ApiScopeIds` class now define the
+test client id and the three API scope names. `Concertable.Auth.Contracts` is a published, feed-pinned
+package consumed everywhere by `PackageReference` — including by Auth's own `Config.cs` — so this addition
+had to land and publish on its own before any consumer could reference it; wiring `Config.cs` and
+`TestTokenMinter.cs` onto the new constants is the follow-up once the bumped pin reaches both.
