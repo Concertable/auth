@@ -12,4 +12,10 @@
     <PackageReference Include="Concertable.Messaging.Contracts" />
   </ItemGroup>
 
+  <!-- tests/ holds this package's own unit-test project; it must not compile into the package. -->
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <None Remove="tests/**/*" />
+  </ItemGroup>
+
 </Project>

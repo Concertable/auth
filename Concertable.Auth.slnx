@@ -11,5 +11,6 @@
     <Project Path="tests/Concertable.Auth.IntegrationTests.Fixtures/Concertable.Auth.IntegrationTests.Fixtures.csproj" />
     <Project Path="tests/Concertable.Auth.IntegrationTests/Concertable.Auth.IntegrationTests.csproj" />
     <Project Path="tests/Concertable.Auth.UnitTests/Concertable.Auth.UnitTests.csproj" />
+    <Project Path="src/Concertable.Auth.Contracts/tests/Concertable.Auth.Contracts.UnitTests/Concertable.Auth.Contracts.UnitTests.csproj" />
   </Folder>
 </Solution>
