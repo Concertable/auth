@@ -171,9 +171,11 @@ function Assert-NoSecrets {
     )
 
     # Results/Secrets/Vulnerabilities are ABSENT rather than null on a clean scan, and Set-StrictMode
-    # throws on a missing property — so every hop is existence-checked, not null-checked.
+    # throws on a missing property — so every hop is existence-checked, not null-checked. The
+    # Where-Object is not redundant: Results can also be JSON null, and @($null) is a one-element array
+    # holding $null, whose .PSObject throws. Proven by scripts/test-trivy-gate.ps1.
     $results = if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() }
-    $findings = @($results | ForEach-Object {
+    $findings = @($results | Where-Object { $null -ne $_ } | ForEach-Object {
         if ($_.PSObject.Properties.Name -contains 'Secrets') { @($_.Secrets) } })
     if ($findings.Count -gt 0) {
         throw "Secret scan found $($findings.Count) finding(s) in ${Subject}: $(($findings | ForEach-Object { $_.RuleID }) -join ', ')."
@@ -187,7 +189,7 @@ function Assert-NoCriticalVulnerabilities {
     )
 
     $results = if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() }
-    $findings = @($results | ForEach-Object {
+    $findings = @($results | Where-Object { $null -ne $_ } | ForEach-Object {
         if ($_.PSObject.Properties.Name -contains 'Vulnerabilities') { @($_.Vulnerabilities) } })
     if ($findings.Count -gt 0) {
         throw "Vulnerability scan found $($findings.Count) CRITICAL finding(s) in ${Subject}: $(($findings | ForEach-Object { $_.VulnerabilityID }) -join ', ')."
@@ -359,14 +361,19 @@ try {
     Assert-CandidateImage -Image $runtimeImage -Version $version -ExpectedAssembly 'Concertable.Auth.dll'
     Assert-CandidateImage -Image $migrationImage -Version $version -ExpectedAssembly 'Concertable.Auth.OperationalStoreMigration.dll'
 
-    # No --skip-dirs: measured, and it buys nothing at this scope. Scanning /work/src with no skips at all
-    # took 50s while scanning the same files through a mount rooted at src/ took 3s, and skipping bin/obj
-    # at /work — by glob or by explicit relative path — still did not finish inside 200s. The cost is the
-    # root bind mount itself, not the file count, so trading scan coverage for skips would weaken the gate
-    # and buy nothing. The cache does not help this scan either: --scanners secret downloads no database.
-    # --timeout 30m is the real backstop; a warm scan under concurrent load has been measured at 20m.
+    # artifacts/ is skipped because this script's own Trivy cache lives in it. Scanning our own cache would
+    # be self-inflicted: it is tool state, not source, and it appears only from the second run onwards —
+    # so the first run looks fine and every later one pays for it.
+    #
+    # Nothing else is skipped, and bin/obj deliberately are not. Measured: scanning /work/src with NO skips
+    # took 50s, while the same files through a mount rooted at src/ took 3s, and skipping bin/obj at /work
+    # — by glob or by explicit relative path — still did not finish inside 200s. The cost tracks the scope
+    # of the bind mount, not the file count, so trading away coverage of build output would buy nothing.
+    # The cache cannot help here either: --scanners secret downloads no database. --timeout 30m is the only
+    # real lever, sized for a loaded machine — warm-under-contention runs elsewhere measured 20m and 27m.
     $sourceSecretReport = Invoke-Trivy -ReportPath (Join-Path $evidenceRoot 'source-secrets.json') -Arguments @(
         'filesystem', '--scanners', 'secret', '--format', 'json',
+        '--skip-dirs', 'artifacts',
         '--output', '/evidence/source-secrets.json', '--no-progress', '--timeout', '30m', '/work'
     )
     Assert-NoSecrets -Report $sourceSecretReport -Subject 'the repository source'
