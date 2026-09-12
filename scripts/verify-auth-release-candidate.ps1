@@ -203,10 +203,17 @@ function Get-FindingLabels {
 }
 
 function Assert-NoSecrets {
+    # $Report is not Mandatory: a mandatory parameter rejects $null at BINDING, so a report that parsed to
+    # nothing would die as "Cannot bind argument" before this function's first line — a PowerShell error in
+    # place of "the gate could not look". Guarded by throwing, never by returning clean.
     param(
-        [Parameter(Mandatory)] $Report,
+        $Report,
         [Parameter(Mandatory)][string] $Subject
     )
+
+    if ($null -eq $Report) {
+        throw "No scan report to evaluate for ${Subject}. This is a tool failure, not a clean scan."
+    }
 
     # Results/Secrets/Vulnerabilities are ABSENT rather than null on a clean scan, and Set-StrictMode
     # throws on a missing property — so every hop is existence-checked, not null-checked. The
@@ -225,10 +232,17 @@ function Assert-NoSecrets {
 }
 
 function Assert-NoCriticalVulnerabilities {
+    # $Report is not Mandatory: a mandatory parameter rejects $null at BINDING, so a report that parsed to
+    # nothing would die as "Cannot bind argument" before this function's first line — a PowerShell error in
+    # place of "the gate could not look". Guarded by throwing, never by returning clean.
     param(
-        [Parameter(Mandatory)] $Report,
+        $Report,
         [Parameter(Mandatory)][string] $Subject
     )
+
+    if ($null -eq $Report) {
+        throw "No scan report to evaluate for ${Subject}. This is a tool failure, not a clean scan."
+    }
 
     # The @() wraps the WHOLE if, not each branch: an array written out of an if-expression unrolls, so
     # `$x = if (...) { @() } else { @() }` assigns $null, not an empty array. Harmless here only because
