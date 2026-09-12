@@ -161,7 +161,22 @@ function Invoke-Trivy {
         throw "Trivy wrote a report but exited $trivyExit for arguments '$($Arguments -join ' ')'. The report is not trusted."
     }
 
-    return (Get-Content -Raw -LiteralPath $ReportPath | ConvertFrom-Json)
+    # Presence is not validity. A scanner killed mid-write — which is what a full disk produces — leaves
+    # the file there and EMPTY, and an empty file parses to $null, which would reach the gate looking like
+    # a report with no findings. An unreadable report is a scan that did not happen, not a clean scan.
+    $raw = Get-Content -Raw -LiteralPath $ReportPath
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        throw "Trivy exited 0 but wrote an empty report for arguments '$($Arguments -join ' ')'. This is a tool failure, not a clean scan."
+    }
+
+    try { $report = $raw | ConvertFrom-Json }
+    catch { throw "Trivy wrote an unparseable report for arguments '$($Arguments -join ' ')': $($_.Exception.Message). This is a tool failure, not a clean scan." }
+
+    if ($null -eq $report) {
+        throw "Trivy wrote a report that parsed to nothing for arguments '$($Arguments -join ' ')'. This is a tool failure, not a clean scan."
+    }
+
+    return $report
 }
 
 function Get-FindingLabels {
