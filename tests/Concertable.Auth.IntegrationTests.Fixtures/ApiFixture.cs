@@ -104,7 +104,7 @@ public sealed class ApiFixture : IAsyncLifetime
     }
 
     public string CreateAuthorizationReturnUrl() =>
-        $"/connect/authorize/callback?client_id={InteractiveClient.CustomerBrowser.Info().Id}"
+        $"/connect/authorize/callback?client_id={InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id}"
         + "&redirect_uri=https%3A%2F%2Flocalhost%3A5174%2Fauth%2Fcallback"
         + "&response_type=code&scope=openid&state=test-state&nonce=test-nonce"
         + "&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -242,7 +242,7 @@ public sealed class ApiFixture : IAsyncLifetime
         var store = scope.ServiceProvider.GetRequiredService<IMessageStore<LogoutMessage>>();
         var message = new LogoutMessage
         {
-            ClientId = InteractiveClient.CustomerBrowser.Info().Id,
+            ClientId = InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id,
             PostLogoutRedirectUri = postLogoutRedirectUri
         };
         return await store.WriteAsync(new Message<LogoutMessage>(message, DateTime.UtcNow));

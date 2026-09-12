@@ -47,20 +47,20 @@ internal sealed class AuthDevSeeder : IDevSeeder
 
         var toAdd = new List<CredentialEntity>
         {
-            CredentialFactory.Create(SeedUsers.Admin, SeedUsers.AdminEmail, passwordHash, InteractiveClient.Admin.Info().Id)
+            CredentialFactory.Create(SeedUsers.Admin, SeedUsers.AdminEmail, passwordHash, InteractiveClientInfo.Get(InteractiveClient.Admin).Id)
         };
 
         for (int i = 1; i <= SeedCustomers.CustomerCount; i++)
             toAdd.Add(CredentialFactory.Create(
-                SeedCustomers.CustomerId(i), SeedCustomers.CustomerEmail(i), passwordHash, InteractiveClient.CustomerBrowser.Info().Id));
+                SeedCustomers.CustomerId(i), SeedCustomers.CustomerEmail(i), passwordHash, InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id));
 
         foreach (var m in SeedUsers.Managers)
             toAdd.Add(CredentialFactory.Create(
                 m.Id, m.Email, passwordHash,
-                (m.Kind == ManagerKind.Artist ? InteractiveClient.ArtistBrowser : InteractiveClient.VenueBrowser).Info().Id));
+                InteractiveClientInfo.Get(m.Kind == ManagerKind.Artist ? InteractiveClient.ArtistBrowser : InteractiveClient.VenueBrowser).Id));
 
         toAdd.Add(CredentialFactory.Create(
-            UnverifiedVenueManagerId, UnverifiedVenueManagerEmail, passwordHash, InteractiveClient.VenueBrowser.Info().Id));
+            UnverifiedVenueManagerId, UnverifiedVenueManagerEmail, passwordHash, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
 
         logger.SeedingCredentials(existing, toAdd.Count);
         context.Credentials.AddRange(toAdd);

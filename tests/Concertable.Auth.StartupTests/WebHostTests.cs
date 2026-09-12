@@ -47,7 +47,7 @@ public sealed class WebHostTests
         var expected = expectedClientIds?.Split(',').ToHashSet(StringComparer.Ordinal)
             ?? [];
 
-        foreach (var clientId in new[] { InteractiveClient.CustomerBrowser.Info().Id, InteractiveClient.VenueBrowser.Info().Id, InteractiveClient.ArtistBrowser.Info().Id, InteractiveClient.Admin.Info().Id })
+        foreach (var clientId in new[] { InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.ArtistBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.Admin).Id })
         {
             var client = await clientStore.FindClientByIdAsync(clientId);
             Assert.Equal(expected.Contains(clientId), client is not null);
@@ -77,7 +77,7 @@ public sealed class WebHostTests
         using var app = builder.Build();
         var clientStore = app.Services.GetRequiredService<IClientStore>();
 
-        foreach (var clientId in new[] { InteractiveClient.CustomerBrowser.Info().Id, InteractiveClient.VenueBrowser.Info().Id, InteractiveClient.ArtistBrowser.Info().Id, InteractiveClient.Admin.Info().Id })
+        foreach (var clientId in new[] { InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.ArtistBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.Admin).Id })
             Assert.NotNull(await clientStore.FindClientByIdAsync(clientId));
     }
 }
