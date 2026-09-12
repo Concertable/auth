@@ -52,6 +52,11 @@ foreach ($name in $lifted) {
     }, $true) | ForEach-Object { $_.Left } |
         Where-Object { $_ -is [System.Management.Automation.Language.VariableExpressionAst] } |
         ForEach-Object { $_.VariablePath.UserPath })
+    # A foreach variable is bound by the loop, not by an assignment, so a naive scan reports it as free and
+    # cries wolf on every loop. Same for a trap/catch variable.
+    $declared += @($definition.FindAll({
+        param($node) $node -is [System.Management.Automation.Language.ForEachStatementAst]
+    }, $true) | ForEach-Object { $_.Variable.VariablePath.UserPath })
 
     $free = @($definition.FindAll({
         param($node) $node -is [System.Management.Automation.Language.VariableExpressionAst]
