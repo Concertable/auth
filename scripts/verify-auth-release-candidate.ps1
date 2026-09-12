@@ -164,6 +164,29 @@ function Invoke-Trivy {
     return (Get-Content -Raw -LiteralPath $ReportPath | ConvertFrom-Json)
 }
 
+function Get-FindingLabels {
+    <#
+        Renders findings for the failure message without ever touching a member that might not be there.
+        A malformed finding — a null, or one missing its id — is still COUNTED and still blocks; it is only
+        LABELLED defensively. That asymmetry is deliberate: nulls are filtered at the container level,
+        because a null result carries no findings, but counted at the finding level, because a malformed
+        report is not a clean one. And the message must survive a malformed finding sitting beside a real
+        credential, or the gate reports a PowerShell error instead of the credential it just caught.
+    #>
+    # $Findings is deliberately untyped and non-mandatory: an array holding a single $null binds as $null
+    # to a mandatory [object[]], which is the exact malformed shape this function exists to render.
+    param(
+        $Findings,
+        [Parameter(Mandatory)][string] $Property
+    )
+
+    return @(@($Findings) | ForEach-Object {
+        if ($null -eq $_) { '<null finding>' }
+        elseif ($_.PSObject.Properties.Name -contains $Property -and -not [string]::IsNullOrWhiteSpace([string] $_.$Property)) { [string] $_.$Property }
+        else { '<unnamed finding>' }
+    })
+}
+
 function Assert-NoSecrets {
     param(
         [Parameter(Mandatory)] $Report,
@@ -178,7 +201,7 @@ function Assert-NoSecrets {
     $findings = @($results | Where-Object { $null -ne $_ } | ForEach-Object {
         if ($_.PSObject.Properties.Name -contains 'Secrets') { @($_.Secrets) } })
     if ($findings.Count -gt 0) {
-        throw "Secret scan found $($findings.Count) finding(s) in ${Subject}: $(($findings | ForEach-Object { $_.RuleID }) -join ', ')."
+        throw "Secret scan found $($findings.Count) finding(s) in ${Subject}: $((Get-FindingLabels -Findings $findings -Property 'RuleID') -join ', ')."
     }
 }
 
@@ -192,7 +215,7 @@ function Assert-NoCriticalVulnerabilities {
     $findings = @($results | Where-Object { $null -ne $_ } | ForEach-Object {
         if ($_.PSObject.Properties.Name -contains 'Vulnerabilities') { @($_.Vulnerabilities) } })
     if ($findings.Count -gt 0) {
-        throw "Vulnerability scan found $($findings.Count) CRITICAL finding(s) in ${Subject}: $(($findings | ForEach-Object { $_.VulnerabilityID }) -join ', ')."
+        throw "Vulnerability scan found $($findings.Count) CRITICAL finding(s) in ${Subject}: $((Get-FindingLabels -Findings $findings -Property 'VulnerabilityID') -join ', ')."
     }
 }
 

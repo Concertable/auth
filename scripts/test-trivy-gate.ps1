@@ -24,7 +24,7 @@ if ($parseErrors.Count -gt 0) {
     throw "verify-auth-release-candidate.ps1 does not parse: $($parseErrors[0].Message)"
 }
 
-foreach ($name in @('Assert-NoSecrets', 'Assert-NoCriticalVulnerabilities')) {
+foreach ($name in @('Get-FindingLabels', 'Assert-NoSecrets', 'Assert-NoCriticalVulnerabilities')) {
     $definition = $ast.FindAll({
         param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name
@@ -68,6 +68,20 @@ Test-Gate 'secrets: one finding'                 { Assert-NoSecrets -Report ([ps
 Test-Gate 'secrets: two findings, two results'   { Assert-NoSecrets -Report ([pscustomobject]@{ Results = @(
         [pscustomobject]@{ Target = 'a'; Secrets = @([pscustomobject]@{ RuleID = 'r1' }) },
         [pscustomobject]@{ Target = 'b'; Secrets = @([pscustomobject]@{ RuleID = 'r2' }) }) }) -Subject 't' } $true $secretLike
+
+# A null ELEMENT is not the same shape as a null Results, and the second case is the one that matters:
+# a real credential sitting beside a null must still be REPORTED AS A CREDENTIAL. A gate that dies on the
+# null fails closed, but whoever triages it sees a broken script rather than a secret.
+Test-Gate 'secrets: [null] element only'         { Assert-NoSecrets -Report ([pscustomobject]@{ Results = @($null) }) -Subject 't' } $false $secretLike
+Test-Gate 'secrets: [null, real finding]'        { Assert-NoSecrets -Report ([pscustomobject]@{ Results = @(
+        $null,
+        [pscustomobject]@{ Target = 'b'; Secrets = @([pscustomobject]@{ RuleID = 'r2' }) }) }) -Subject 't' } $true $secretLike
+# Deliberate asymmetry: nulls are FILTERED at the container level but COUNTED at the finding level.
+# Blocking on a malformed report is the safe direction; filtering there would pass it clean.
+Test-Gate 'secrets: null INSIDE Secrets'         { Assert-NoSecrets -Report ([pscustomobject]@{ Results = @(
+        [pscustomobject]@{ Target = 'a'; Secrets = @($null) }) }) -Subject 't' } $true $secretLike
+Test-Gate 'secrets: null + real INSIDE Secrets'  { Assert-NoSecrets -Report ([pscustomobject]@{ Results = @(
+        [pscustomobject]@{ Target = 'a'; Secrets = @($null, [pscustomobject]@{ RuleID = 'r3' }) }) }) -Subject 't' } $true $secretLike
 
 $vulnLike = 'Vulnerability scan found*'
 Test-Gate 'vulns: Results absent'                { Assert-NoCriticalVulnerabilities -Report ([pscustomobject]@{ SchemaVersion = 2 }) -Subject 't' } $false $vulnLike
