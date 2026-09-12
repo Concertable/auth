@@ -90,6 +90,7 @@ function Test-Gate {
     # malformed-report bugs: one counts a null and mangles the message, the other filters it and passes a
     # report whose only entry was that null. Both look correct under a blocks/does-not-block assertion
     # whenever a real finding happens to sit alongside.
+    # ExpectCount -1 means "this block carries no finding count" — a scan-failure rather than a finding.
     $reported = -1
     if ($blocked -and $message -match 'found (\d+) ') { $reported = [int] $Matches[1] }
     $countOk = (-not $blocked) -or ($reported -eq $ExpectCount)
@@ -129,11 +130,16 @@ Test-Gate 'secrets: null INSIDE Secrets'         { Assert-NoSecrets -Report ([ps
 Test-Gate 'secrets: null + real INSIDE Secrets'  { Assert-NoSecrets -Report ([pscustomobject]@{ Results = @(
         [pscustomobject]@{ Target = 'a'; Secrets = @($null, [pscustomobject]@{ RuleID = 'r3' }) }) }) -Subject 't' } $true 2 $secretLike
 
+# A null report is what an EMPTY report file parses to, and a killed scan on a full disk leaves exactly
+# that. It must block, and it must say the scan failed rather than dying at parameter binding.
+Test-Gate 'secrets: null report (empty file)'    { Assert-NoSecrets -Report $null -Subject 't' } $true -1 'No scan report to evaluate*'
+
 $vulnLike = 'Vulnerability scan found*'
 Test-Gate 'vulns: Results absent'                { Assert-NoCriticalVulnerabilities -Report ([pscustomobject]@{ SchemaVersion = 2 }) -Subject 't' } $false 0 $vulnLike
 Test-Gate 'vulns: Results null'                  { Assert-NoCriticalVulnerabilities -Report ([pscustomobject]@{ Results = $null }) -Subject 't' } $false 0 $vulnLike
 Test-Gate 'vulns: Vulnerabilities absent'        { Assert-NoCriticalVulnerabilities -Report ([pscustomobject]@{ Results = @([pscustomobject]@{ Target = 'img' }) }) -Subject 't' } $false 0 $vulnLike
 Test-Gate 'vulns: Vulnerabilities empty'         { Assert-NoCriticalVulnerabilities -Report ([pscustomobject]@{ Results = @([pscustomobject]@{ Target = 'img'; Vulnerabilities = @() }) }) -Subject 't' } $false 0 $vulnLike
+Test-Gate 'vulns: null report (empty file)'      { Assert-NoCriticalVulnerabilities -Report $null -Subject 't' } $true -1 'No scan report to evaluate*'
 Test-Gate 'vulns: one CRITICAL'                  { Assert-NoCriticalVulnerabilities -Report ([pscustomobject]@{ Results = @([pscustomobject]@{ Target = 'img'; Vulnerabilities = @([pscustomobject]@{ VulnerabilityID = 'CVE-2026-0001' }) }) }) -Subject 't' } $true 1 $vulnLike
 
 if ($failures -gt 0) {
