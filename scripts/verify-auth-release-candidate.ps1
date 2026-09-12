@@ -44,12 +44,14 @@ $imageRoot = Join-Path $releaseRoot 'images'
 $evidenceRoot = Join-Path $releaseRoot 'evidence'
 $manifestPath = Join-Path $releaseRoot 'release-manifest.json'
 $releaseId = [Guid]::NewGuid().ToString('N')
-$trivyCacheVolume = "concertable-auth-trivy-cache-$releaseId"
+# Persistent across runs, deliberately. A per-run cache is cold by construction on every invocation:
+# Trivy re-downloads its database and re-analyses every layer, turning a ~100s scan into 10+ minutes and
+# then into a timeout that looks exactly like a finding. Gitignored via artifacts/; CI caches this path.
+$trivyCachePath = Join-Path $repositoryRoot 'artifacts/.trivy-cache'
 $runtimeImage = "concertable/auth:release-candidate-$releaseId"
 $migrationImage = "concertable/auth-operational-store-migration:release-candidate-$releaseId"
 $candidateImages = [System.Collections.Generic.List[string]]::new()
 $releaseRootCreated = $false
-$trivyCacheVolumeCreated = $false
 $completed = $false
 $releaseVersion = ''
 $packageToken = $env:GITHUB_PACKAGES_TOKEN
@@ -128,51 +130,72 @@ function Assert-CandidateImage {
 }
 
 function Invoke-Trivy {
-    param([Parameter(Mandatory)][string[]] $Arguments)
+    <#
+        Never passes --exit-code. Trivy exits 1 for "findings present" AND for any fatal error, so under
+        --exit-code the two are indistinguishable at the call site — a timeout reads exactly like a secret
+        detection. The report file is the discriminator: a fatal run never writes one. Callers gate on the
+        parsed report, not on the exit code.
+    #>
+    param(
+        [Parameter(Mandatory)][string[]] $Arguments,
+        [Parameter(Mandatory)][string] $ReportPath
+    )
+
+    if (Test-Path -LiteralPath $ReportPath) {
+        Remove-Item -LiteralPath $ReportPath -Force
+    }
 
     & docker run --rm `
         --volume "${repositoryRoot}:/work:ro" `
         --volume "${imageRoot}:/images:ro" `
         --volume "${evidenceRoot}:/evidence" `
-        --volume "${trivyCacheVolume}:/root/.cache/trivy" `
+        --volume "${trivyCachePath}:/root/.cache/trivy" `
         $trivyImage `
         @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Trivy failed with exit code $LASTEXITCODE for arguments '$($Arguments -join ' ')'."
+    $trivyExit = $LASTEXITCODE
+
+    if (-not (Test-Path -LiteralPath $ReportPath)) {
+        throw "Trivy could not complete (exit code $trivyExit, no report written) for arguments '$($Arguments -join ' ')'. This is a tool failure, not a scan result."
+    }
+    if ($trivyExit -ne 0) {
+        throw "Trivy wrote a report but exited $trivyExit for arguments '$($Arguments -join ' ')'. The report is not trusted."
+    }
+
+    return (Get-Content -Raw -LiteralPath $ReportPath | ConvertFrom-Json)
+}
+
+function Assert-NoSecrets {
+    param(
+        [Parameter(Mandatory)] $Report,
+        [Parameter(Mandatory)][string] $Subject
+    )
+
+    # Results/Secrets/Vulnerabilities are ABSENT rather than null on a clean scan, and Set-StrictMode
+    # throws on a missing property — so every hop is existence-checked, not null-checked.
+    $results = if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() }
+    $findings = @($results | ForEach-Object {
+        if ($_.PSObject.Properties.Name -contains 'Secrets') { @($_.Secrets) } })
+    if ($findings.Count -gt 0) {
+        throw "Secret scan found $($findings.Count) finding(s) in ${Subject}: $(($findings | ForEach-Object { $_.RuleID }) -join ', ')."
     }
 }
 
-function New-TrivyCacheVolume {
-    $createdVolume = (& docker volume create `
-        --label "com.concertable.auth.release-candidate=$releaseId" `
-        $trivyCacheVolume).Trim()
-    if ($LASTEXITCODE -ne 0 -or $createdVolume -ne $trivyCacheVolume) {
-        throw "Could not create owned Trivy cache volume '$trivyCacheVolume'."
+function Assert-NoCriticalVulnerabilities {
+    param(
+        [Parameter(Mandatory)] $Report,
+        [Parameter(Mandatory)][string] $Subject
+    )
+
+    $results = if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() }
+    $findings = @($results | ForEach-Object {
+        if ($_.PSObject.Properties.Name -contains 'Vulnerabilities') { @($_.Vulnerabilities) } })
+    if ($findings.Count -gt 0) {
+        throw "Vulnerability scan found $($findings.Count) CRITICAL finding(s) in ${Subject}: $(($findings | ForEach-Object { $_.VulnerabilityID }) -join ', ')."
     }
 }
 
-function Remove-TrivyCacheVolume {
-    $inspectionJson = & docker volume inspect $trivyCacheVolume 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        $matchingVolumes = @(& docker volume ls --quiet --filter "name=$trivyCacheVolume" 2>$null)
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not prove Trivy cache volume '$trivyCacheVolume' is absent."
-        }
-        if ($matchingVolumes -contains $trivyCacheVolume) {
-            throw "Could not inspect existing Trivy cache volume '$trivyCacheVolume'."
-        }
-        return
-    }
-
-    $inspection = ($inspectionJson | ConvertFrom-Json)[0]
-    if ($inspection.Labels.'com.concertable.auth.release-candidate' -ne $releaseId) {
-        throw "Refusing to remove unowned Trivy cache volume '$trivyCacheVolume'."
-    }
-
-    & docker volume rm $trivyCacheVolume
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not remove Trivy cache volume '$trivyCacheVolume'."
-    }
+function Initialize-TrivyCache {
+    [System.IO.Directory]::CreateDirectory($trivyCachePath) | Out-Null
 }
 
 function Get-NuGetIdentity {
@@ -255,8 +278,7 @@ try {
     }
     New-Item -ItemType Directory -Path $imageRoot, $evidenceRoot | Out-Null
 
-    New-TrivyCacheVolume
-    $trivyCacheVolumeCreated = $true
+    Initialize-TrivyCache
 
     $env:GITHUB_PACKAGES_TOKEN = $packageToken
     & (Join-Path $PSScriptRoot 'verify-auth-packages.ps1') `
@@ -337,10 +359,11 @@ try {
     Assert-CandidateImage -Image $runtimeImage -Version $version -ExpectedAssembly 'Concertable.Auth.dll'
     Assert-CandidateImage -Image $migrationImage -Version $version -ExpectedAssembly 'Concertable.Auth.OperationalStoreMigration.dll'
 
-    Invoke-Trivy -Arguments @(
-        'filesystem', '--scanners', 'secret', '--exit-code', '1', '--format', 'json',
-        '--output', '/evidence/source-secrets.json', '--no-progress', '/work'
+    $sourceSecretReport = Invoke-Trivy -ReportPath (Join-Path $evidenceRoot 'source-secrets.json') -Arguments @(
+        'filesystem', '--scanners', 'secret', '--format', 'json',
+        '--output', '/evidence/source-secrets.json', '--no-progress', '--timeout', '30m', '/work'
     )
+    Assert-NoSecrets -Report $sourceSecretReport -Subject 'the repository source'
 
     $imageEvidence = @(
         [ordered]@{
@@ -371,20 +394,24 @@ try {
         $vulnerabilityFile = [System.IO.Path]::GetFileName($item.vulnerabilities)
         $secretFile = [System.IO.Path]::GetFileName($item.secrets)
         $sbomFile = [System.IO.Path]::GetFileName($item.sbom)
-        Invoke-Trivy -Arguments @(
-            'image', '--scanners', 'vuln', '--severity', 'CRITICAL', '--exit-code', '1', '--format', 'json',
-            '--output', "/evidence/$vulnerabilityFile", '--no-progress', '--input', "/images/$archiveFile"
-        )
-        Invoke-Trivy -Arguments @(
-            'image', '--scanners', 'secret', '--exit-code', '1', '--format', 'json',
-            '--output', "/evidence/$secretFile", '--no-progress', '--input', "/images/$archiveFile"
-        )
-        Invoke-Trivy -Arguments @(
-            'image', '--format', 'cyclonedx', '--output', "/evidence/$sbomFile", '--no-progress',
+        $vulnerabilityReport = Invoke-Trivy -ReportPath $item.vulnerabilities -Arguments @(
+            'image', '--scanners', 'vuln', '--severity', 'CRITICAL', '--format', 'json',
+            '--output', "/evidence/$vulnerabilityFile", '--no-progress', '--timeout', '30m',
             '--input', "/images/$archiveFile"
         )
+        Assert-NoCriticalVulnerabilities -Report $vulnerabilityReport -Subject $item.image
 
-        $sbom = Get-Content -Raw -LiteralPath $item.sbom | ConvertFrom-Json
+        $imageSecretReport = Invoke-Trivy -ReportPath $item.secrets -Arguments @(
+            'image', '--scanners', 'secret', '--format', 'json',
+            '--output', "/evidence/$secretFile", '--no-progress', '--timeout', '30m',
+            '--input', "/images/$archiveFile"
+        )
+        Assert-NoSecrets -Report $imageSecretReport -Subject $item.image
+
+        $sbom = Invoke-Trivy -ReportPath $item.sbom -Arguments @(
+            'image', '--format', 'cyclonedx', '--output', "/evidence/$sbomFile", '--no-progress',
+            '--timeout', '30m', '--input', "/images/$archiveFile"
+        )
         if ($sbom.bomFormat -ne 'CycloneDX' -or @($sbom.components).Count -eq 0) {
             throw "Release-candidate SBOM validation failed for '$($item.image)'."
         }
@@ -478,21 +505,15 @@ finally {
         }
     }
     finally {
-        try {
-            if ($trivyCacheVolumeCreated) {
-                Remove-TrivyCacheVolume
-            }
+        # The Trivy cache deliberately survives the run; it is the whole point of a warm cache.
+        if ((Test-Path -LiteralPath $markerPath -PathType Leaf) -and (-not $KeepArtifacts -or -not $completed)) {
+            Assert-ReleaseRoot
+            Remove-Item -LiteralPath $releaseRoot -Recurse -Force
+            $releaseRootCreated = $false
         }
-        finally {
-            if ((Test-Path -LiteralPath $markerPath -PathType Leaf) -and (-not $KeepArtifacts -or -not $completed)) {
-                Assert-ReleaseRoot
-                Remove-Item -LiteralPath $releaseRoot -Recurse -Force
-                $releaseRootCreated = $false
-            }
-            elseif ($releaseRootCreated -and -not (Test-Path -LiteralPath $markerPath)) {
-                Remove-Item -LiteralPath $releaseRoot -Recurse -Force -ErrorAction SilentlyContinue
-                $releaseRootCreated = $false
-            }
+        elseif ($releaseRootCreated -and -not (Test-Path -LiteralPath $markerPath)) {
+            Remove-Item -LiteralPath $releaseRoot -Recurse -Force -ErrorAction SilentlyContinue
+            $releaseRootCreated = $false
         }
     }
 }
