@@ -197,7 +197,11 @@ function Assert-NoSecrets {
     # throws on a missing property — so every hop is existence-checked, not null-checked. The
     # Where-Object is not redundant: Results can also be JSON null, and @($null) is a one-element array
     # holding $null, whose .PSObject throws. Proven by scripts/test-trivy-gate.ps1.
-    $results = if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() }
+    # The @() wraps the WHOLE if, not each branch: an array written out of an if-expression unrolls, so
+    # `$x = if (...) { @() } else { @() }` assigns $null, not an empty array. Harmless here only because
+    # piping $null yields nothing rather than throwing — one edit touching $results directly would make it
+    # throw on the CLEAN path, which is every run until one is not.
+    $results = @(if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() })
     $findings = @($results | Where-Object { $null -ne $_ } | ForEach-Object {
         if ($_.PSObject.Properties.Name -contains 'Secrets') { @($_.Secrets) } })
     if ($findings.Count -gt 0) {
@@ -211,7 +215,11 @@ function Assert-NoCriticalVulnerabilities {
         [Parameter(Mandatory)][string] $Subject
     )
 
-    $results = if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() }
+    # The @() wraps the WHOLE if, not each branch: an array written out of an if-expression unrolls, so
+    # `$x = if (...) { @() } else { @() }` assigns $null, not an empty array. Harmless here only because
+    # piping $null yields nothing rather than throwing — one edit touching $results directly would make it
+    # throw on the CLEAN path, which is every run until one is not.
+    $results = @(if ($Report.PSObject.Properties.Name -contains 'Results') { @($Report.Results) } else { @() })
     $findings = @($results | Where-Object { $null -ne $_ } | ForEach-Object {
         if ($_.PSObject.Properties.Name -contains 'Vulnerabilities') { @($_.Vulnerabilities) } })
     if ($findings.Count -gt 0) {
