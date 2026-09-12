@@ -359,6 +359,12 @@ try {
     Assert-CandidateImage -Image $runtimeImage -Version $version -ExpectedAssembly 'Concertable.Auth.dll'
     Assert-CandidateImage -Image $migrationImage -Version $version -ExpectedAssembly 'Concertable.Auth.OperationalStoreMigration.dll'
 
+    # No --skip-dirs: measured, and it buys nothing at this scope. Scanning /work/src with no skips at all
+    # took 50s while scanning the same files through a mount rooted at src/ took 3s, and skipping bin/obj
+    # at /work — by glob or by explicit relative path — still did not finish inside 200s. The cost is the
+    # root bind mount itself, not the file count, so trading scan coverage for skips would weaken the gate
+    # and buy nothing. The cache does not help this scan either: --scanners secret downloads no database.
+    # --timeout 30m is the real backstop; a warm scan under concurrent load has been measured at 20m.
     $sourceSecretReport = Invoke-Trivy -ReportPath (Join-Path $evidenceRoot 'source-secrets.json') -Arguments @(
         'filesystem', '--scanners', 'secret', '--format', 'json',
         '--output', '/evidence/source-secrets.json', '--no-progress', '--timeout', '30m', '/work'
