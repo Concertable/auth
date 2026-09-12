@@ -57,36 +57,47 @@ public sealed class OperationalStoreMigrationFixture : IAsyncLifetime
                 ([Id], [Version], [Created], [Use], [Algorithm], [IsX509Certificate], [DataProtected], [Data])
             VALUES
                 (N'key-1', 1, '2026-08-30T12:00:00', N'signing', N'RS256', 0, 1, N'protected-key-data');
+            """;
 
-            SET IDENTITY_INSERT [idsrv].[PersistedGrants] ON;
+        const string persistedGrantSql = """
             INSERT INTO [idsrv].[PersistedGrants]
                 ([Id], [Key], [Type], [SubjectId], [SessionId], [ClientId], [Description],
                  [CreationTime], [Expiration], [ConsumedTime], [Data])
             VALUES
                 (41, N'grant-key', N'refresh_token', N'subject', N'session', N'client', N'refresh token',
                  '2026-08-30T12:00:00', '2026-09-29T12:00:00', NULL, N'protected-grant-data');
-            SET IDENTITY_INSERT [idsrv].[PersistedGrants] OFF;
+            """;
 
-            SET IDENTITY_INSERT [idsrv].[PushedAuthorizationRequests] ON;
+        const string pushedAuthorizationRequestSql = """
             INSERT INTO [idsrv].[PushedAuthorizationRequests]
                 ([Id], [ReferenceValueHash], [ExpiresAtUtc], [Parameters])
             VALUES
                 (42, REPLICATE(N'A', 64), '2026-08-30T12:10:00', N'protected-par-data');
-            SET IDENTITY_INSERT [idsrv].[PushedAuthorizationRequests] OFF;
+            """;
 
-            SET IDENTITY_INSERT [idsrv].[ServerSideSessions] ON;
+        const string serverSideSessionSql = """
             INSERT INTO [idsrv].[ServerSideSessions]
                 ([Id], [Key], [Scheme], [SubjectId], [SessionId], [DisplayName], [Created], [Renewed], [Expires], [Data])
             VALUES
                 (43, N'session-key', N'idsrv', N'subject', N'session', N'Test Session',
                  '2026-08-30T12:00:00', '2026-08-30T12:01:00', '2026-09-29T12:00:00', N'protected-session-data');
-            SET IDENTITY_INSERT [idsrv].[ServerSideSessions] OFF;
             """;
 
-        await using var connection = new SqlConnection(connectionString);
-        await connection.OpenAsync();
-        await using var command = new SqlCommand(sql, connection);
-        await command.ExecuteNonQueryAsync();
+        await using var provider = CreateProvider(connectionString);
+        var database = provider.GetRequiredService<PersistedGrantDbContext>().Database;
+        await database.ExecuteSqlRawAsync(sql);
+        await database.ExecuteWithIdentityInsertAsync(
+            "idsrv",
+            "PersistedGrants",
+            persistedGrantSql);
+        await database.ExecuteWithIdentityInsertAsync(
+            "idsrv",
+            "PushedAuthorizationRequests",
+            pushedAuthorizationRequestSql);
+        await database.ExecuteWithIdentityInsertAsync(
+            "idsrv",
+            "ServerSideSessions",
+            serverSideSessionSql);
     }
 
     public async Task<long> ReadIdentityAsync(string connectionString, string tableName)
@@ -136,14 +147,19 @@ public sealed class OperationalStoreMigrationFixture : IAsyncLifetime
 
     private static async Task MigrateAsync(string connectionString)
     {
+        await using var provider = CreateProvider(connectionString);
+        await provider.GetRequiredService<PersistedGrantDbContext>().Database.MigrateAsync();
+    }
+
+    private static ServiceProvider CreateProvider(string connectionString)
+    {
         var services = new ServiceCollection();
         services.AddSingleton(new OperationalStoreOptions { DefaultSchema = "idsrv" });
         services.AddDbContext<PersistedGrantDbContext>(options =>
             options.UseSqlServer(
                 connectionString,
                 sql => sql.MigrationsAssembly(typeof(AuthHostExtensions).Assembly.GetName().Name)));
-        await using var provider = services.BuildServiceProvider();
-        await provider.GetRequiredService<PersistedGrantDbContext>().Database.MigrateAsync();
+        return services.BuildServiceProvider();
     }
 
     private sealed class RespawnableDatabase : IAsyncDisposable
