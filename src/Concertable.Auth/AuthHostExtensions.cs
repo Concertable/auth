@@ -127,7 +127,7 @@ public static class AuthHostExtensions
                 Config.ArtistMobileClient(builder.Configuration["Auth:ExpoGoRedirectUri:Business"]),
             };
             clients.AddRange(ServiceClients.All.Select(service =>
-                Config.ServiceClient(service.Id, RequireSecret(service.SecretConfigKey), service.GrantedScope.Id())));
+                Config.ServiceClient(service.Id, RequireSecret(service.SecretConfigKey), service.GrantedScope.Id)));
             if (builder.Environment.IsE2E())
                 clients.Add(Config.TestClient);
 

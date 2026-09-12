@@ -27,12 +27,15 @@ public static class AuthResources
     /// <summary>Every resource server.</summary>
     public static IReadOnlyCollection<AuthResource> All => ByResource.Keys;
 
-    /// <summary>The JWT audience a resource server validates, e.g. <c>concertable.b2b.api</c>.</summary>
-    public static string Audience(this AuthResource resource) => ByResource[resource].Audience;
+    extension(AuthResource resource)
+    {
+        /// <summary>The JWT audience a resource server validates, e.g. <c>concertable.b2b.api</c>.</summary>
+        public string Audience => ByResource[resource].Audience;
 
-    /// <summary>The scopes the resource accepts.</summary>
-    public static ImmutableArray<AuthScope> AcceptedScopes(this AuthResource resource) => ByResource[resource].Scopes;
+        /// <summary>The scopes the resource accepts.</summary>
+        public ImmutableArray<AuthScope> AcceptedScopes => ByResource[resource].Scopes;
 
-    /// <summary>The user-claim types Auth includes in tokens issued for the resource.</summary>
-    public static ImmutableArray<string> IncludedClaims(this AuthResource resource) => ByResource[resource].IncludedClaims;
+        /// <summary>The user-claim types Auth includes in tokens issued for the resource.</summary>
+        public ImmutableArray<string> IncludedClaims => ByResource[resource].IncludedClaims;
+    }
 }

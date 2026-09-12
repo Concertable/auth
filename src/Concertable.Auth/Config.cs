@@ -26,16 +26,16 @@ public static class Config
     };
 
     public static IReadOnlyList<ApiScope> ApiScopes =>
-        AuthScopes.All.Select(scope => new ApiScope(scope.Id(), ScopeDisplayNames[scope])).ToArray();
+        AuthScopes.All.Select(scope => new ApiScope(scope.Id, ScopeDisplayNames[scope])).ToArray();
 
     /* B2B is identity-only: `email` comes from the local Auth credential, and authority is the
        request-scoped active tenant (X-Tenant-Id → membership), never a token claim. No `role`, no
        `owner` — one claim can't model a multi-tenant user. `owner` stays Customer-only. */
     public static IReadOnlyList<ApiResource> ApiResources =>
-        AuthResources.All.Select(resource => new ApiResource(resource.Audience(), ResourceDisplayNames[resource])
+        AuthResources.All.Select(resource => new ApiResource(resource.Audience, ResourceDisplayNames[resource])
         {
-            Scopes = resource.AcceptedScopes().Select(scope => scope.Id()).ToList(),
-            UserClaims = resource.IncludedClaims().ToList(),
+            Scopes = resource.AcceptedScopes.Select(scope => scope.Id).ToList(),
+            UserClaims = resource.IncludedClaims.ToList(),
         }).ToArray();
 
     public static IReadOnlyList<IdentityResource> IdentityResources =>
@@ -56,8 +56,8 @@ public static class Config
 
     private static Client MobileClient(InteractiveClient client, string? expoGoRedirectUri)
     {
-        var info = client.Info();
-        var scheme = info.MobileScheme
+        var info = InteractiveClientInfo.Get(client);
+        var scheme = client.MobileRedirectScheme
             ?? throw new InvalidOperationException($"{client} has no mobile redirect scheme.");
         var redirectUris = new HashSet<string> { scheme };
         if (!string.IsNullOrEmpty(expoGoRedirectUri))
@@ -75,8 +75,8 @@ public static class Config
             PostLogoutRedirectUris = { scheme },
 
             AllowedScopes = client == InteractiveClient.CustomerMobile
-                ? new HashSet<string> { "openid", "profile", AuthScope.CustomerApi.Id() }
-                : new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id() },
+                ? new HashSet<string> { "openid", "profile", AuthScope.CustomerApi.Id }
+                : new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id },
 
             AllowOfflineAccess = true,
             AccessTokenLifetime = 900,
@@ -89,10 +89,10 @@ public static class Config
 
     public static Client TestClient => new Client
     {
-        ClientId = InteractiveClient.E2ETest.Info().Id,
+        ClientId = InteractiveClientInfo.Get(InteractiveClient.E2ETest).Id,
         AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
         RequireClientSecret = false,
-        AllowedScopes = { "openid", AuthScope.B2BApi.Id(), AuthScope.CustomerApi.Id(), AuthScope.SearchApi.Id() },
+        AllowedScopes = { "openid", AuthScope.B2BApi.Id, AuthScope.CustomerApi.Id, AuthScope.SearchApi.Id },
     };
 
     public static IReadOnlyList<Client> WebClients(SpaClientSettings spa)
@@ -125,7 +125,7 @@ public static class Config
 
     private static Client WebClient(InteractiveClient client, WebClientSettings settings) => new()
     {
-        ClientId = client.Info().Id,
+        ClientId = InteractiveClientInfo.Get(client).Id,
 
         AllowedGrantTypes = GrantTypes.Code,
         RequirePkce = true,
@@ -136,8 +136,8 @@ public static class Config
         AllowedCorsOrigins = settings.AllowedCorsOrigins,
 
         AllowedScopes = client == InteractiveClient.CustomerBrowser
-            ? new HashSet<string> { "openid", "profile", "roles", AuthScope.CustomerApi.Id(), AuthScope.SearchApi.Id() }
-            : new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id() },
+            ? new HashSet<string> { "openid", "profile", "roles", AuthScope.CustomerApi.Id, AuthScope.SearchApi.Id }
+            : new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id },
 
         AllowOfflineAccess = true,
         AccessTokenLifetime = 900,

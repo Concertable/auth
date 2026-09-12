@@ -18,20 +18,20 @@ public sealed class AuthScopesTests
     [InlineData(AuthScope.UserClaims, "user:claims")]
     public void Id_IsTheWireScopeString(AuthScope scope, string expected)
     {
-        Assert.Equal(expected, scope.Id());
+        Assert.Equal(expected, scope.Id);
     }
 
     [Fact]
     public void Id_HasAWireStringForEveryScope()
     {
         foreach (var scope in Enum.GetValues<AuthScope>())
-            Assert.False(string.IsNullOrEmpty(scope.Id()));
+            Assert.False(string.IsNullOrEmpty(scope.Id));
     }
 
     [Fact]
     public void All_WireStringsAreDistinct()
     {
-        var ids = AuthScopes.All.Select(scope => scope.Id()).ToList();
+        var ids = AuthScopes.All.Select(scope => scope.Id).ToList();
 
         Assert.Equal(ids.Count, ids.Distinct(StringComparer.Ordinal).Count());
     }

@@ -14,8 +14,11 @@ public static class AuthScopes
         [AuthScope.UserClaims] = "user:claims",
     }.ToFrozenDictionary();
 
-    /// <summary>The wire scope string, e.g. <c>concertable.b2b.api</c>.</summary>
-    public static string Id(this AuthScope scope) => ByScope[scope];
+    extension(AuthScope scope)
+    {
+        /// <summary>The wire scope string, e.g. <c>concertable.b2b.api</c>.</summary>
+        public string Id => ByScope[scope];
+    }
 
     /// <summary>Every issued scope.</summary>
     public static IReadOnlyCollection<AuthScope> All => ByScope.Keys;
