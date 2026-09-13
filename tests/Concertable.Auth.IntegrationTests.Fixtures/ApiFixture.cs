@@ -257,6 +257,7 @@ public sealed class ApiFixture : IAsyncLifetime
             "ConnectionStrings__asb",
             "Endpoint=sb://localhost/;SharedAccessKeyName=test;SharedAccessKey=test");
         SetEnvironment("Auth__Authority", "https://localhost");
+        SetEnvironment("Auth__VerificationBaseUrl", "https://auth.internal");
         SetEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
         SetEnvironment("ServiceAuth__B2BClientSecret", "b2b-test-secret");
         SetEnvironment("ServiceAuth__CustomerClientSecret", "customer-test-secret");
