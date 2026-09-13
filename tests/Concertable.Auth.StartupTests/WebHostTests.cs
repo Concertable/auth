@@ -1,16 +1,35 @@
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Hosting;
 using Concertable.Testing.Architecture;
+using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.Stores;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Concertable.Auth.StartupTests;
 
 public sealed class WebHostTests
 {
+    [Fact]
+    public void E2EGraph_UsesHttpCompatibleCookies()
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            Args = CompositionTestArguments.Create(),
+            EnvironmentName = "E2E"
+        });
+        builder.AddAuthHost();
+        using var app = builder.Build();
+        var options = app.Services.GetRequiredService<IOptions<IdentityServerOptions>>().Value;
+
+        Assert.Equal(SameSiteMode.Lax, options.Authentication.CookieSameSiteMode);
+        Assert.Equal(SameSiteMode.Lax, options.Authentication.CheckSessionCookieSameSiteMode);
+    }
+
     [Fact]
     public void ProductionGraphAndStrictValidation_AreValid()
     {
