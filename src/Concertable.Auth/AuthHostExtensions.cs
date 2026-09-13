@@ -136,6 +136,11 @@ public static class AuthHostExtensions
                 {
                     if (!string.IsNullOrEmpty(publicUrl))
                         options.IssuerUri = publicUrl;
+                    if (builder.Environment.IsE2E())
+                    {
+                        options.Authentication.CookieSameSiteMode = SameSiteMode.Lax;
+                        options.Authentication.CheckSessionCookieSameSiteMode = SameSiteMode.Lax;
+                    }
                 })
                 .AddInMemoryApiScopes(Config.ApiScopes)
                 .AddInMemoryApiResources(Config.ApiResources)
