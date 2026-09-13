@@ -11,11 +11,16 @@ public sealed class RegisterModel : PageModel
 {
     private readonly IAuthService authService;
     private readonly IIdentityServerInteractionService interaction;
+    private readonly IConfiguration configuration;
 
-    public RegisterModel(IAuthService authService, IIdentityServerInteractionService interaction)
+    public RegisterModel(
+        IAuthService authService,
+        IIdentityServerInteractionService interaction,
+        IConfiguration configuration)
     {
         this.authService = authService;
         this.interaction = interaction;
+        this.configuration = configuration;
     }
 
     [BindProperty] public string Email { get; set; } = null!;
@@ -36,7 +41,9 @@ public sealed class RegisterModel : PageModel
             return Page();
         }
 
-        var verifyUrl = $"{Request.Scheme}://{Request.Host}/Account/VerifyEmail";
+        var verificationBaseUrl = configuration["Auth:VerificationBaseUrl"]?.TrimEnd('/')
+            ?? $"{Request.Scheme}://{Request.Host}";
+        var verifyUrl = $"{verificationBaseUrl}/Account/VerifyEmail";
         var result = await authService.RegisterAsync(Email, Password, clientId, verifyUrl, ct);
 
         if (result.TryGetError(out var error))

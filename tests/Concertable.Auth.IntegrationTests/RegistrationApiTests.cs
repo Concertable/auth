@@ -116,6 +116,7 @@ public sealed class RegistrationApiTests : IAsyncLifetime
         Assert.False(credential.IsEmailVerified);
         var emailMessage = Assert.Single(fixture.EmailSender.Sent);
         Assert.Equal(email, emailMessage.To);
+        Assert.Equal("https://auth.internal/Account/VerifyEmail", emailMessage.Body);
         Assert.Equal(emailMessage.Token, await fixture.GetEmailVerificationTokenAsync(credential.Id));
     }
 
