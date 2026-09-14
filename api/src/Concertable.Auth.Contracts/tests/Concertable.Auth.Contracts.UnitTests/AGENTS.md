@@ -2,7 +2,7 @@
 
 Covers the published `Concertable.Auth.Contracts` typed identity model — `InteractiveClientInfo`,
 `AuthScopes` and `AuthResources`, each a frozen catalog owning its own lookup: completeness, wire-id
-round-trips, `GetOrDefault` misses. The project under test is the parent `src/Concertable.Auth.Contracts/`
+round-trips, `GetOrDefault` misses. The project under test is the parent `api/src/Concertable.Auth.Contracts/`
 package, which grants this project `InternalsVisibleTo` so the roster-completeness tests can read
 `InteractiveClientInfo.All`.
 

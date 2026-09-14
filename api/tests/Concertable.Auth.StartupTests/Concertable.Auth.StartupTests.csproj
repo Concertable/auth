@@ -3,8 +3,8 @@
   <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
   <ItemGroup><PackageReference Include="coverlet.collector" /><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /><PackageReference Include="xunit.runner.visualstudio" /></ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Concertable.Auth\Concertable.Auth.csproj" />
-    <ProjectReference Include="..\..\src\Concertable.Auth.AppHost\Concertable.Auth.AppHost.csproj" />
+    <ProjectReference Include="..\..\..\api\src\Concertable.Auth\Concertable.Auth.csproj" />
+    <ProjectReference Include="..\..\..\local\AppHost\Concertable.Auth.AppHost.csproj" />
     <PackageReference Include="Concertable.Testing.Architecture" />
   </ItemGroup>
 </Project>

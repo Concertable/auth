@@ -28,11 +28,11 @@ The `clientId` is **not stored** in Auth — it is forwarded on the integration 
 ## CredentialRegisteredEvent
 
 ```csharp
-// src/Concertable.Auth.Contracts/Events/CredentialRegisteredEvent.cs
+// api/src/Concertable.Auth.Contracts/Events/CredentialRegisteredEvent.cs
 public record CredentialRegisteredEvent(Guid UserId, string Email, string ClientId) : IIntegrationEvent;
 ```
 
-`ClientId` values are the `InteractiveClients` catalog in `src/Concertable.Auth.Contracts/InteractiveClients.cs`,
+`ClientId` values are the `InteractiveClients` catalog in `api/src/Concertable.Auth.Contracts/InteractiveClients.cs`,
 keyed by the `InteractiveClient` enum; `InteractiveClients.Find` resolves a wire id back to its row:
 
 | ClientId | InteractiveClient | Surface |
