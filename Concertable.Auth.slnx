@@ -1,16 +1,16 @@
 <Solution>
-  <Project Path="src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj" />
-  <Project Path="src/Concertable.Auth/Concertable.Auth.csproj" />
-  <Project Path="src/Concertable.Auth.Hosting/Concertable.Auth.Hosting.csproj" />
-  <Project Path="src/Concertable.Auth.AppHost/Concertable.Auth.AppHost.csproj" />
+  <Project Path="local/AppHost/Concertable.Auth.AppHost.csproj" />
+  <Project Path="api/src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj" />
+  <Project Path="api/src/Concertable.Auth/Concertable.Auth.csproj" />
+  <Project Path="api/src/Concertable.Auth.Hosting/Concertable.Auth.Hosting.csproj" />
   <Folder Name="/Tools/">
     <Project Path="tools/Concertable.Auth.OperationalStoreMigration/Concertable.Auth.OperationalStoreMigration.csproj" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="tests/Concertable.Auth.StartupTests/Concertable.Auth.StartupTests.csproj" />
-    <Project Path="tests/Concertable.Auth.IntegrationTests.Fixtures/Concertable.Auth.IntegrationTests.Fixtures.csproj" />
-    <Project Path="tests/Concertable.Auth.IntegrationTests/Concertable.Auth.IntegrationTests.csproj" />
-    <Project Path="tests/Concertable.Auth.UnitTests/Concertable.Auth.UnitTests.csproj" />
-    <Project Path="src/Concertable.Auth.Contracts/tests/Concertable.Auth.Contracts.UnitTests/Concertable.Auth.Contracts.UnitTests.csproj" />
+    <Project Path="api/tests/Concertable.Auth.StartupTests/Concertable.Auth.StartupTests.csproj" />
+    <Project Path="api/tests/Concertable.Auth.IntegrationTests.Fixtures/Concertable.Auth.IntegrationTests.Fixtures.csproj" />
+    <Project Path="api/tests/Concertable.Auth.IntegrationTests/Concertable.Auth.IntegrationTests.csproj" />
+    <Project Path="api/tests/Concertable.Auth.UnitTests/Concertable.Auth.UnitTests.csproj" />
+    <Project Path="api/src/Concertable.Auth.Contracts/tests/Concertable.Auth.Contracts.UnitTests/Concertable.Auth.Contracts.UnitTests.csproj" />
   </Folder>
 </Solution>

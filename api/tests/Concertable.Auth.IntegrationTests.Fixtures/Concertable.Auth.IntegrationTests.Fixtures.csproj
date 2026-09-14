@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Concertable.Auth\Concertable.Auth.csproj" />
+    <ProjectReference Include="..\..\..\api\src\Concertable.Auth\Concertable.Auth.csproj" />
     <PackageReference Include="Concertable.Testing" />
     <PackageReference Include="Concertable.Testing.Integration" />
   </ItemGroup>
