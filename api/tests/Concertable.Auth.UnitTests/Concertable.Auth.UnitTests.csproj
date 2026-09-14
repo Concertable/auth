@@ -10,22 +10,20 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Reunion" />
+    <PackageReference Include="Reunion.Errors" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Concertable.Auth.IntegrationTests.Fixtures\Concertable.Auth.IntegrationTests.Fixtures.csproj" />
-    <ProjectReference Include="..\..\tools\Concertable.Auth.OperationalStoreMigration\Concertable.Auth.OperationalStoreMigration.csproj" />
-    <PackageReference Include="Concertable.Testing" />
+    <ProjectReference Include="..\..\..\api\src\Concertable.Auth\Concertable.Auth.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <Using Include="Concertable.Auth.IntegrationTests.Fixtures" />
-    <Using Include="Concertable.Testing" />
   </ItemGroup>
 
 </Project>
