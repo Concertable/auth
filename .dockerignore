@@ -7,11 +7,12 @@
 !nuget.config
 !README.md
 
-!src/
-!src/Concertable.Auth.Contracts/
-!src/Concertable.Auth.Contracts/**
-!src/Concertable.Auth/
-!src/Concertable.Auth/**
+!api/
+!api/src/
+!api/src/Concertable.Auth.Contracts/
+!api/src/Concertable.Auth.Contracts/**
+!api/src/Concertable.Auth/
+!api/src/Concertable.Auth/**
 !tools/
 !tools/Concertable.Auth.OperationalStoreMigration/
 !tools/Concertable.Auth.OperationalStoreMigration/**

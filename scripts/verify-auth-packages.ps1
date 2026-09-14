@@ -41,8 +41,8 @@ $consumerPackages = Join-Path $consumerRoot 'packages'
 $versionPath = Join-Path $verificationRoot 'version.txt'
 $expectedPackageIds = @('Concertable.Auth.Contracts', 'Concertable.Auth.Hosting')
 $packageProjects = @(
-    (Join-Path $repositoryRoot 'src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj'),
-    (Join-Path $repositoryRoot 'src/Concertable.Auth.Hosting/Concertable.Auth.Hosting.csproj')
+    (Join-Path $repositoryRoot 'api/src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj'),
+    (Join-Path $repositoryRoot 'api/src/Concertable.Auth.Hosting/Concertable.Auth.Hosting.csproj')
 )
 $canonicalRepositoryUrl = 'https://github.com/Concertable/auth'
 $minimumAuthVersionCore = [version] '0.2.0'

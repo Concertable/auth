@@ -8,20 +8,20 @@ ARG BUILD_VERSION=0.0.0-local
 FROM ${DOTNET_SDK_IMAGE} AS auth-restore
 WORKDIR /source
 COPY Directory.Build.props Directory.Build.targets Directory.Packages.props nuget.config README.md ./
-COPY src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj src/Concertable.Auth.Contracts/
-COPY src/Concertable.Auth.Contracts/Directory.Build.props src/Concertable.Auth.Contracts/
-COPY src/Concertable.Auth.Contracts/Directory.Packages.props src/Concertable.Auth.Contracts/
-COPY src/Concertable.Auth/Concertable.Auth.csproj src/Concertable.Auth/
+COPY api/src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj api/src/Concertable.Auth.Contracts/
+COPY api/src/Concertable.Auth.Contracts/Directory.Build.props api/src/Concertable.Auth.Contracts/
+COPY api/src/Concertable.Auth.Contracts/Directory.Packages.props api/src/Concertable.Auth.Contracts/
+COPY api/src/Concertable.Auth/Concertable.Auth.csproj api/src/Concertable.Auth/
 RUN --mount=type=secret,id=github_packages_token \
     test -s /run/secrets/github_packages_token && \
     GITHUB_PACKAGES_TOKEN="$(cat /run/secrets/github_packages_token)" \
-    dotnet restore src/Concertable.Auth/Concertable.Auth.csproj
+    dotnet restore api/src/Concertable.Auth/Concertable.Auth.csproj
 
 FROM auth-restore AS auth-publish
 ARG BUILD_VERSION
-COPY src/Concertable.Auth.Contracts/ src/Concertable.Auth.Contracts/
-COPY src/Concertable.Auth/ src/Concertable.Auth/
-RUN dotnet publish src/Concertable.Auth/Concertable.Auth.csproj \
+COPY api/src/Concertable.Auth.Contracts/ api/src/Concertable.Auth.Contracts/
+COPY api/src/Concertable.Auth/ api/src/Concertable.Auth/
+RUN dotnet publish api/src/Concertable.Auth/Concertable.Auth.csproj \
     --configuration Release \
     --no-restore \
     --output /app/publish \

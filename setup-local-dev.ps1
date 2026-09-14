@@ -5,8 +5,8 @@ param()
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'tools/OwnerOperations.psm1') -Force
 Initialize-OwnerDevelopment -Root $PSScriptRoot `
-    -AppHostProject 'src/Concertable.Auth.AppHost/Concertable.Auth.AppHost.csproj' `
-    -SettingsProjects @('src/Concertable.Auth') `
+    -AppHostProject 'local/AppHost/Concertable.Auth.AppHost.csproj' `
+    -SettingsProjects @('api/src/Concertable.Auth') `
     -SecretKeys @('ServiceAuth:B2BClientSecret', 'ServiceAuth:CustomerClientSecret', 'ServiceAuth:AuthClientSecret') `
     -WhatIf:$WhatIfPreference
-Write-Host "Run: dotnet run --project '$PSScriptRoot/src/Concertable.Auth.AppHost'"
+Write-Host "Run: dotnet run --project '$PSScriptRoot/local/AppHost'"

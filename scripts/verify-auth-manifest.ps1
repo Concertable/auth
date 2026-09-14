@@ -8,7 +8,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$appHostProject = Join-Path $repositoryRoot 'src/Concertable.Auth.AppHost/Concertable.Auth.AppHost.csproj'
+$appHostProject = Join-Path $repositoryRoot 'local/AppHost/Concertable.Auth.AppHost.csproj'
 $resolvedOutputPath = [IO.Path]::GetFullPath($OutputPath, $repositoryRoot)
 $outputDirectory = Split-Path -Parent $resolvedOutputPath
 
