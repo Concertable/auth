@@ -39,7 +39,7 @@ jobs:
 
       - name: Restore
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
         run: dotnet restore Concertable.Auth.slnx
 
       - name: Build
@@ -65,7 +65,7 @@ jobs:
       - name: Restore package verification consumer
         shell: pwsh
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
         run: >-
           dotnet restore '${{ runner.temp }}/auth-package-verification/consumer/AuthPackageConsumer.csproj'
           --configfile '${{ runner.temp }}/auth-package-verification/consumer/nuget.config'
@@ -109,7 +109,7 @@ jobs:
       - name: Build and inspect images without publishing
         shell: pwsh
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
         run: >-
           ./scripts/verify-auth-images.ps1
           -RuntimeImage 'concertable/auth:verification'
@@ -216,7 +216,7 @@ jobs:
       - name: Prepare and verify release candidate without publishing
         shell: pwsh
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ github.token }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.CONCERTABLE_PACKAGES_READ }}
         run: >-
           ./scripts/verify-auth-release-candidate.ps1
           -Configuration Release
