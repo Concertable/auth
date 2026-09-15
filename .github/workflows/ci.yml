@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+  merge_group:
+    branches:
+      - main
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -219,8 +222,8 @@ jobs:
           -Configuration Release
           -OutputPath '${{ runner.temp }}/auth-release-candidate'
 
-  gate:
-    name: Required CI gate
+  ci-complete:
+    name: ci-complete
     if: always()
     needs:
       - verify
@@ -230,21 +233,6 @@ jobs:
     permissions: {}
 
     steps:
-      - name: Require successful verification
-        env:
-          VERIFY_RESULT: ${{ needs.verify.result }}
-          IMAGES_RESULT: ${{ needs.images.result }}
-          RELEASE_CANDIDATE_RESULT: ${{ needs.release-candidate.result }}
-        run: |
-          if [ "$VERIFY_RESULT" != "success" ]; then
-            echo "::error::Credentialed verification did not complete successfully ($VERIFY_RESULT)."
-            exit 1
-          fi
-          if [ "$IMAGES_RESULT" != "success" ]; then
-            echo "::error::Image verification did not complete successfully ($IMAGES_RESULT)."
-            exit 1
-          fi
-          if [ "$RELEASE_CANDIDATE_RESULT" != "success" ]; then
-            echo "::error::Release-candidate verification did not complete successfully ($RELEASE_CANDIDATE_RESULT)."
-            exit 1
-          fi
+      - uses: Concertable/pipeline/.github/actions/require-jobs-green@13e26afd6f35855a78d3c554e097522e8476c04e
+        with:
+          results: ${{ join(needs.*.result, ' ') }}
