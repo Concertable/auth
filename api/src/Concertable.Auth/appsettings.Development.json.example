@@ -24,6 +24,11 @@
         "PostLogoutRedirectUri": "https://localhost:5176",
         "AllowedCorsOrigins": [ "https://localhost:5176" ]
       },
+      "Business": {
+        "RedirectUri": "https://localhost:5177/auth/callback",
+        "PostLogoutRedirectUri": "https://localhost:5177",
+        "AllowedCorsOrigins": [ "https://localhost:5177" ]
+      },
       "Admin": {
         "RedirectUri": "https://localhost:5178/auth/callback",
         "PostLogoutRedirectUri": "https://localhost:5178",

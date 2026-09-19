@@ -33,6 +33,8 @@ public sealed class InteractiveClientInfoTests
     [InlineData("venue-mobile", InteractiveClient.VenueMobile)]
     [InlineData("artist-web", InteractiveClient.ArtistBrowser)]
     [InlineData("artist-mobile", InteractiveClient.ArtistMobile)]
+    [InlineData("business-web", InteractiveClient.BusinessBrowser)]
+    [InlineData("business-mobile", InteractiveClient.BusinessMobile)]
     [InlineData("admin", InteractiveClient.Admin)]
     [InlineData("concertable-test", InteractiveClient.E2ETest)]
     public void GetOrDefault_AKnownWireId_ResolvesItsRow(string clientId, InteractiveClient expected)

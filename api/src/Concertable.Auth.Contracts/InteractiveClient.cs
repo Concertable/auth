@@ -16,4 +16,6 @@ public enum InteractiveClient
     ArtistMobile,
     Admin,
     E2ETest,
+    BusinessBrowser,
+    BusinessMobile,
 }
