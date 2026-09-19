@@ -65,12 +65,17 @@ public sealed class OperationalStoreTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RemoveAllAsync_ClearsTheExpiredGrantsOfOneClient()
+    public async Task RemoveAllAsync_ClearsTheMatchedClientsGrantsAndLeavesTheRest()
     {
         var expired = DateTime.UtcNow.AddHours(-2);
         await fixture.InvokeAsync<IPersistedGrantStore, bool>(async store =>
         {
-            await store.StoreAsync(CreateGrant("expired-key", expired, expired.AddHours(1)));
+            await store.StoreAsync(CreateGrant("revoked-key", expired, expired.AddHours(1)));
+            await store.StoreAsync(CreateGrant(
+                "retained-key",
+                expired,
+                expired.AddHours(1),
+                clientId: "concertable-venue-web"));
             return true;
         });
 
@@ -84,10 +89,10 @@ public sealed class OperationalStoreTests : IAsyncLifetime
             return true;
         });
 
-        var remaining = await fixture.InvokeAsync<IPersistedGrantStore, PersistedGrant?>(
-            store => store.GetAsync("expired-key"));
-
-        Assert.Null(remaining);
+        Assert.Null(await fixture.InvokeAsync<IPersistedGrantStore, PersistedGrant?>(
+            store => store.GetAsync("revoked-key")));
+        Assert.NotNull(await fixture.InvokeAsync<IPersistedGrantStore, PersistedGrant?>(
+            store => store.GetAsync("retained-key")));
     }
 
     #endregion
@@ -129,14 +134,15 @@ public sealed class OperationalStoreTests : IAsyncLifetime
         string key,
         DateTime creation,
         DateTime expiration,
-        string subjectId = "subject-a") =>
+        string subjectId = "subject-a",
+        string clientId = "concertable-customer-web") =>
         new()
         {
             Key = key,
             Type = "refresh_token",
             SubjectId = subjectId,
             SessionId = "session-a",
-            ClientId = "concertable-customer-web",
+            ClientId = clientId,
             Description = "integration grant",
             CreationTime = creation,
             Expiration = expiration,

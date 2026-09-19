@@ -13,9 +13,7 @@ internal sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbC
         services.AddOptions<OutboxOptions>();
         services.AddSingleton<AuthConfigurationProvider>();
         services.AddDbContext<AuthDbContext>(opts =>
-            opts.UseNpgsql(
-                DesignTimeConfiguration.ConnectionString(),
-                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)));
+            opts.UseNpgsqlForAuth(DesignTimeConfiguration.ConnectionString()));
         return services.BuildServiceProvider().GetRequiredService<AuthDbContext>();
     }
 }

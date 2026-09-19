@@ -28,11 +28,13 @@ public static class AppHostExtensions
             string image,
             string digest,
             IResourceBuilder<PostgresDatabaseResource> authDb,
+            IResourceBuilder<IResource> migrations,
             IResourceBuilder<AzureServiceBusResource> asb)
         {
             var auth = builder.AddContainerImage(AuthConstants.Resource, image, digest)
                               .WithReference(authDb)
                               .WaitFor(authDb)
+                              .WaitForCompletion(migrations)
                               .WithReference(asb)
                               .WaitFor(asb)
                               .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");
@@ -59,12 +61,14 @@ public static class AppHostExtensions
 
         public IResourceBuilder<ProjectResource> AddAuth<TProject>(
             IResourceBuilder<PostgresDatabaseResource> authDb,
+            IResourceBuilder<IResource> migrations,
             IResourceBuilder<AzureServiceBusResource> asb)
             where TProject : IProjectMetadata, new()
         {
             var auth = builder.AddProject<TProject>(AuthConstants.Resource)
                               .WithReference(authDb)
                               .WaitFor(authDb)
+                              .WaitForCompletion(migrations)
                               .WithReference(asb)
                               .WaitFor(asb)
                               .AddSecrets(builder, "ServiceAuth:B2BClientSecret", "ServiceAuth:CustomerClientSecret", "ServiceAuth:AuthClientSecret");

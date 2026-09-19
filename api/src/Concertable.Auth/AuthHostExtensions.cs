@@ -75,9 +75,7 @@ public static class AuthHostExtensions
             builder.Services.AddSeedingInfrastructure();
             builder.Services.AddSingleton<AuthConfigurationProvider>();
             builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
-                opt.UseNpgsql(
-                        authConnectionString,
-                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                opt.UseNpgsqlForAuth(authConnectionString)
                     .AddInterceptors(sp.GetRequiredService<AuditInterceptor>(), sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(sp));
             builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
@@ -103,9 +101,7 @@ public static class AuthHostExtensions
             if (!builder.Environment.IsProduction())
                 builder.Services.AddScoped<IDevSeeder, AuthDevSeeder>();
             builder.Services.AddOutbox(
-                opt => opt.UseNpgsql(
-                    authConnectionString,
-                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Outbox", Schema.Messaging)),
+                opt => opt.UseNpgsqlForOutbox(authConnectionString),
                 runDispatcher: true);
             builder.Services.AddInProcessEventDispatch();
             builder.Services.AddAzureServiceBusTransport(
@@ -156,11 +152,7 @@ public static class AuthHostExtensions
                 .AddProfileService<ProfileService>()
                 .AddOperationalStore(options =>
                 {
-                    options.ConfigureDbContext = db => db.UseNpgsql(
-                        authConnectionString,
-                        npgsql => npgsql
-                            .MigrationsAssembly(migrationsAssembly)
-                            .MigrationsHistoryTable("__EFMigrationsHistory", Schema.Grants));
+                    options.ConfigureDbContext = db => db.UseNpgsqlForGrants(authConnectionString);
                     options.DefaultSchema = Schema.Grants;
                 })
                 .AddDeveloperSigningCredential();
