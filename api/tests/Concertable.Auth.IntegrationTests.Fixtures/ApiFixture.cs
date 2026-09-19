@@ -274,6 +274,7 @@ public sealed class ApiFixture : IAsyncLifetime
             (nameof(SpaClientSettings.Customer), 5174),
             (nameof(SpaClientSettings.Venue), 5175),
             (nameof(SpaClientSettings.Artist), 5176),
+            (nameof(SpaClientSettings.Business), 5177),
         ];
         foreach (var (client, port) in clients)
         {

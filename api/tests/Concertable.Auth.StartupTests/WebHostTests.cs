@@ -49,8 +49,8 @@ public sealed class WebHostTests
     [Theory]
     [InlineData(null, null)]
     [InlineData("Customer", "customer-web")]
-    [InlineData("Venue,Artist,Admin", "venue-web,artist-web,admin")]
-    [InlineData("Customer,Venue,Artist,Admin", "customer-web,venue-web,artist-web,admin")]
+    [InlineData("Venue,Artist,Business,Admin", "venue-web,artist-web,business-web,admin")]
+    [InlineData("Customer,Venue,Artist,Business,Admin", "customer-web,venue-web,artist-web,business-web,admin")]
     public async Task EnabledSpaClients_FilterBundledDefaults(string? enabledNames, string? expectedClientIds)
     {
         var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
@@ -66,10 +66,19 @@ public sealed class WebHostTests
         var expected = expectedClientIds?.Split(',').ToHashSet(StringComparer.Ordinal)
             ?? [];
 
-        foreach (var clientId in new[] { InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.ArtistBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.Admin).Id })
+        InteractiveClient[] browserClients =
+        [
+            InteractiveClient.CustomerBrowser,
+            InteractiveClient.VenueBrowser,
+            InteractiveClient.ArtistBrowser,
+            InteractiveClient.BusinessBrowser,
+            InteractiveClient.Admin,
+        ];
+        foreach (var browserClient in browserClients)
         {
-            var client = await clientStore.FindClientByIdAsync(clientId);
-            Assert.Equal(expected.Contains(clientId), client is not null);
+            var clientId = InteractiveClientInfo.Get(browserClient).Id;
+
+            Assert.Equal(expected.Contains(clientId), await clientStore.FindClientByIdAsync(clientId) is not null);
         }
     }
 
@@ -80,12 +89,12 @@ public sealed class WebHostTests
         builder.Configuration.AddInMemoryCollection([
             new("Auth:SpaClients:RestrictToEnabledClients", "true"),
             new("Auth:SpaClients:EnabledClients:0", "Customer"),
-            new("Auth:SpaClients:EnabledClients:1", "Business")
+            new("Auth:SpaClients:EnabledClients:1", "Unknown")
         ]);
 
         var exception = Assert.Throws<InvalidOperationException>(() => builder.AddAuthHost());
 
-        Assert.Contains("Business", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Unknown", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -96,7 +105,43 @@ public sealed class WebHostTests
         using var app = builder.Build();
         var clientStore = app.Services.GetRequiredService<IClientStore>();
 
-        foreach (var clientId in new[] { InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.ArtistBrowser).Id, InteractiveClientInfo.Get(InteractiveClient.Admin).Id })
-            Assert.NotNull(await clientStore.FindClientByIdAsync(clientId));
+        InteractiveClient[] browserClients =
+        [
+            InteractiveClient.CustomerBrowser,
+            InteractiveClient.VenueBrowser,
+            InteractiveClient.ArtistBrowser,
+            InteractiveClient.BusinessBrowser,
+            InteractiveClient.Admin,
+        ];
+        foreach (var browserClient in browserClients)
+            Assert.NotNull(await clientStore.FindClientByIdAsync(InteractiveClientInfo.Get(browserClient).Id));
+    }
+
+    [Fact]
+    public async Task BusinessClients_AreRegisteredForB2BInteractiveFlows()
+    {
+        var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        builder.AddAuthHost();
+        using var app = builder.Build();
+        var clientStore = app.Services.GetRequiredService<IClientStore>();
+
+        var browser = await clientStore.FindClientByIdAsync(
+            InteractiveClientInfo.Get(InteractiveClient.BusinessBrowser).Id);
+        var mobile = await clientStore.FindClientByIdAsync(
+            InteractiveClientInfo.Get(InteractiveClient.BusinessMobile).Id);
+
+        Assert.NotNull(browser);
+        Assert.Equal(["https://business.concertable.co.uk/auth/callback"], browser.RedirectUris);
+        Assert.Equal(["https://business.concertable.co.uk"], browser.PostLogoutRedirectUris);
+        Assert.Equal(["https://business.concertable.co.uk"], browser.AllowedCorsOrigins);
+        Assert.Equal(
+            new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id },
+            browser.AllowedScopes.ToHashSet(StringComparer.Ordinal));
+        Assert.NotNull(mobile);
+        Assert.Equal(["concertable-business://"], mobile.RedirectUris);
+        Assert.Equal(["concertable-business://"], mobile.PostLogoutRedirectUris);
+        Assert.Equal(
+            new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id },
+            mobile.AllowedScopes.ToHashSet(StringComparer.Ordinal));
     }
 }
