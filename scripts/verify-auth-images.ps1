@@ -195,7 +195,11 @@ try {
     }
 
     $migrationOutput = (& docker run --rm $MigrationImage 2>&1) -join "`n"
-    if ($LASTEXITCODE -eq 0 -or $migrationOutput -notmatch "Connection string 'ConnectionStrings__AuthDb' is required") {
+    $migrationExitCode = $LASTEXITCODE
+    # This smoke expects the container to FAIL, so reset $LASTEXITCODE: PowerShell hands the last native
+    # exit code to the caller, and CI would read this deliberate non-zero as the whole step failing.
+    $global:LASTEXITCODE = 0
+    if ($migrationExitCode -eq 0 -or $migrationOutput -notmatch "Connection string 'ConnectionStrings__AuthDb' is required") {
         throw 'Auth migrations image did not refuse to run without a connection string.'
     }
 
