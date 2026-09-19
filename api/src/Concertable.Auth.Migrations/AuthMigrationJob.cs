@@ -19,20 +19,9 @@ internal static class AuthMigrationJob
         services.AddOptions<OutboxOptions>();
         services.AddSingleton(new OperationalStoreOptions { DefaultSchema = Schema.Grants });
         services.AddSingleton<AuthConfigurationProvider>();
-        services.AddDbContext<PersistedGrantDbContext>(opts =>
-            opts.UseNpgsql(
-                connectionString,
-                npgsql => npgsql
-                    .MigrationsAssembly(typeof(AuthDbContext).Assembly.GetName().Name)
-                    .MigrationsHistoryTable("__EFMigrationsHistory", Schema.Grants)));
-        services.AddDbContext<AuthDbContext>(opts =>
-            opts.UseNpgsql(
-                connectionString,
-                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)));
-        services.AddDbContext<OutboxDbContext>(opts =>
-            opts.UseNpgsql(
-                connectionString,
-                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Outbox", Schema.Messaging)));
+        services.AddDbContext<PersistedGrantDbContext>(opts => opts.UseNpgsqlForGrants(connectionString));
+        services.AddDbContext<AuthDbContext>(opts => opts.UseNpgsqlForAuth(connectionString));
+        services.AddDbContext<OutboxDbContext>(opts => opts.UseNpgsqlForOutbox(connectionString));
 
         await using var provider = services.BuildServiceProvider();
         await using var scope = provider.CreateAsyncScope();
