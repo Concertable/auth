@@ -121,6 +121,9 @@ public sealed class WebHostTests
     public async Task BusinessClients_AreRegisteredForB2BInteractiveFlows()
     {
         var builder = WebApplication.CreateBuilder(CompositionTestArguments.Create());
+        builder.Configuration.AddInMemoryCollection([
+            new("Auth:ExpoGoRedirectUri:Business", "exp://localhost:8081")
+        ]);
         builder.AddAuthHost();
         using var app = builder.Build();
         var clientStore = app.Services.GetRequiredService<IClientStore>();
@@ -138,7 +141,10 @@ public sealed class WebHostTests
             new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id },
             browser.AllowedScopes.ToHashSet(StringComparer.Ordinal));
         Assert.NotNull(mobile);
-        Assert.Equal(["concertable-business://"], mobile.RedirectUris);
+        Assert.True(mobile.RedirectUris.ToHashSet(StringComparer.Ordinal).SetEquals([
+            "concertable-business://",
+            "exp://localhost:8081",
+        ]));
         Assert.Equal(["concertable-business://"], mobile.PostLogoutRedirectUris);
         Assert.Equal(
             new HashSet<string> { "openid", "profile", AuthScope.B2BApi.Id },

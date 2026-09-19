@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.Auth.Contracts;
 using Concertable.Auth.Services;
 using Xunit.Abstractions;
 
@@ -118,6 +119,23 @@ public sealed class RegistrationApiTests : IAsyncLifetime
         Assert.Equal(email, emailMessage.To);
         Assert.Equal("https://auth.internal/Account/VerifyEmail", emailMessage.Body);
         Assert.Equal(emailMessage.Token, await fixture.GetEmailVerificationTokenAsync(credential.Id));
+    }
+
+    [Fact]
+    public async Task Register_BusinessBrowserAuthorization_CreatesCredential()
+    {
+        const string email = "business-browser@example.com";
+        var client = fixture.CreateClient();
+        var returnUrl = fixture.CreateAuthorizationReturnUrl(
+            InteractiveClient.BusinessBrowser,
+            "https://localhost:5177/auth/callback");
+
+        var response = await client.PostAsync(
+            "/Account/Register",
+            Form(("Email", email), ("Password", Password), ("ReturnUrl", returnUrl)));
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        Assert.Equal(1, await fixture.CountCredentialsAsync(email));
     }
 
     [Fact]
