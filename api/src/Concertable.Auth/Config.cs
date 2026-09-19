@@ -54,6 +54,9 @@ public static class Config
     public static Client ArtistMobileClient(string? expoGoRedirectUri = null) =>
         MobileClient(InteractiveClient.ArtistMobile, expoGoRedirectUri);
 
+    public static Client BusinessMobileClient(string? expoGoRedirectUri = null) =>
+        MobileClient(InteractiveClient.BusinessMobile, expoGoRedirectUri);
+
     private static Client MobileClient(InteractiveClient client, string? expoGoRedirectUri)
     {
         var info = InteractiveClientInfo.Get(client);
@@ -102,6 +105,7 @@ public static class Config
             (nameof(SpaClientSettings.Customer), InteractiveClient.CustomerBrowser, spa.Customer),
             (nameof(SpaClientSettings.Venue), InteractiveClient.VenueBrowser, spa.Venue),
             (nameof(SpaClientSettings.Artist), InteractiveClient.ArtistBrowser, spa.Artist),
+            (nameof(SpaClientSettings.Business), InteractiveClient.BusinessBrowser, spa.Business),
             (nameof(SpaClientSettings.Admin), InteractiveClient.Admin, spa.Admin),
         ];
 
