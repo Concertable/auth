@@ -2,7 +2,6 @@
 
 ARG DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0@sha256:e1ffd2a92ae84c1291bc1b6887501f8af98e6331e7af6d4c8d37168c5e87a64c
 ARG DOTNET_ASPNET_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a4556ed033fa96f984bb7a8d348851cb2d36b1281dd2420070045f664fbb5f94
-ARG DOTNET_RUNTIME_IMAGE=mcr.microsoft.com/dotnet/runtime:10.0@sha256:a365ce6a50b09176855d085c69da3fc1204a48432e36087e9a208f6e5860e235
 ARG BUILD_VERSION=0.0.0-local
 
 FROM ${DOTNET_SDK_IMAGE} AS auth-restore
@@ -44,30 +43,33 @@ EXPOSE 8080
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Concertable.Auth.dll"]
 
-FROM ${DOTNET_SDK_IMAGE} AS migration-publish
+FROM auth-restore AS migration-publish
 ARG BUILD_VERSION
-WORKDIR /source
-COPY Directory.Build.props Directory.Build.targets Directory.Packages.props nuget.config README.md ./
-COPY tools/Concertable.Auth.OperationalStoreMigration/Concertable.Auth.OperationalStoreMigration.csproj tools/Concertable.Auth.OperationalStoreMigration/
-RUN dotnet restore tools/Concertable.Auth.OperationalStoreMigration/Concertable.Auth.OperationalStoreMigration.csproj
-COPY tools/Concertable.Auth.OperationalStoreMigration/ tools/Concertable.Auth.OperationalStoreMigration/
-RUN dotnet publish tools/Concertable.Auth.OperationalStoreMigration/Concertable.Auth.OperationalStoreMigration.csproj \
+COPY api/src/Concertable.Auth.Migrations/Concertable.Auth.Migrations.csproj api/src/Concertable.Auth.Migrations/
+RUN --mount=type=secret,id=github_packages_token \
+    test -s /run/secrets/github_packages_token && \
+    GITHUB_PACKAGES_TOKEN="$(cat /run/secrets/github_packages_token)" \
+    dotnet restore api/src/Concertable.Auth.Migrations/Concertable.Auth.Migrations.csproj
+COPY api/src/Concertable.Auth.Contracts/ api/src/Concertable.Auth.Contracts/
+COPY api/src/Concertable.Auth/ api/src/Concertable.Auth/
+COPY api/src/Concertable.Auth.Migrations/ api/src/Concertable.Auth.Migrations/
+RUN dotnet publish api/src/Concertable.Auth.Migrations/Concertable.Auth.Migrations.csproj \
     --configuration Release \
     --no-restore \
     --output /app/publish \
     /p:UseAppHost=false \
     /p:MinVerVersionOverride="${BUILD_VERSION}"
 
-FROM ${DOTNET_RUNTIME_IMAGE} AS operational-store-migration
+FROM ${DOTNET_ASPNET_IMAGE} AS auth-migrations
 ARG VCS_REF
 ARG BUILD_VERSION
 LABEL org.opencontainers.image.source="https://github.com/Concertable/auth" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.version="${BUILD_VERSION}" \
-      org.opencontainers.image.title="Concertable Auth operational-store migration" \
-      org.opencontainers.image.description="One-shot Duende operational-store copy tool"
+      org.opencontainers.image.title="Concertable Auth migrations" \
+      org.opencontainers.image.description="Applies the Auth, Duende operational-store and outbox schemas"
 WORKDIR /app
 COPY --from=migration-publish --chown=$APP_UID:$APP_UID /app/publish/ ./
 ENV DOTNET_EnableDiagnostics=0
 USER $APP_UID
-ENTRYPOINT ["dotnet", "Concertable.Auth.OperationalStoreMigration.dll"]
+ENTRYPOINT ["dotnet", "Concertable.Auth.Migrations.dll"]

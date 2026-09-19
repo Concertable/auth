@@ -13,9 +13,8 @@
 !api/src/Concertable.Auth.Contracts/**
 !api/src/Concertable.Auth/
 !api/src/Concertable.Auth/**
-!tools/
-!tools/Concertable.Auth.OperationalStoreMigration/
-!tools/Concertable.Auth.OperationalStoreMigration/**
+!api/src/Concertable.Auth.Migrations/
+!api/src/Concertable.Auth.Migrations/**
 
 **/bin/
 **/obj/

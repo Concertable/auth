@@ -14,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $repositoryUrl = 'https://github.com/Concertable/auth'
 $runtimeRepository = 'ghcr.io/concertable/auth'
-$migrationRepository = 'ghcr.io/concertable/auth-operational-store-migration'
+$migrationRepository = 'ghcr.io/concertable/auth-migrations'
 $trivyImage = 'aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
 $revision = (& git -C $repositoryRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($revision)) {
@@ -49,7 +49,7 @@ $releaseId = [Guid]::NewGuid().ToString('N')
 # then into a timeout that looks exactly like a finding. Gitignored via artifacts/; CI caches this path.
 $trivyCachePath = Join-Path $repositoryRoot 'artifacts/.trivy-cache'
 $runtimeImage = "concertable/auth:release-candidate-$releaseId"
-$migrationImage = "concertable/auth-operational-store-migration:release-candidate-$releaseId"
+$migrationImage = "concertable/auth-migrations:release-candidate-$releaseId"
 $candidateImages = [System.Collections.Generic.List[string]]::new()
 $releaseRootCreated = $false
 $completed = $false
@@ -405,21 +405,20 @@ try {
             $repositoryRoot
         ))
     $candidateImages.Add($runtimeImage)
+
+    Invoke-DockerBuildWithPackageToken `
+        -Token $packageToken `
+        -Arguments ($commonArguments + @(
+            '--secret', 'id=github_packages_token,env=GITHUB_PACKAGES_TOKEN',
+            '--target', 'auth-migrations',
+            '--tag', $migrationImage,
+            $repositoryRoot
+        ))
+    $candidateImages.Add($migrationImage)
     $packageToken = $null
 
-    $migrationArguments = $commonArguments + @(
-        '--target', 'operational-store-migration',
-        '--tag', $migrationImage,
-        $repositoryRoot
-    )
-    & docker @migrationArguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Migration release-candidate build failed with exit code $LASTEXITCODE."
-    }
-    $candidateImages.Add($migrationImage)
-
     Assert-CandidateImage -Image $runtimeImage -Version $version -ExpectedAssembly 'Concertable.Auth.dll'
-    Assert-CandidateImage -Image $migrationImage -Version $version -ExpectedAssembly 'Concertable.Auth.OperationalStoreMigration.dll'
+    Assert-CandidateImage -Image $migrationImage -Version $version -ExpectedAssembly 'Concertable.Auth.Migrations.dll'
 
     # artifacts/ is skipped because this script's own Trivy cache lives in it. Scanning our own cache would
     # be self-inflicted: it is tool state, not source, and it appears only from the second run onwards —
@@ -450,10 +449,10 @@ try {
         [ordered]@{
             image = $migrationImage
             repository = $migrationRepository
-            archive = Join-Path $imageRoot 'auth-operational-store-migration.tar'
-            sbom = Join-Path $evidenceRoot 'auth-operational-store-migration.cdx.json'
-            vulnerabilities = Join-Path $evidenceRoot 'auth-operational-store-migration-vulnerabilities.json'
-            secrets = Join-Path $evidenceRoot 'auth-operational-store-migration-secrets.json'
+            archive = Join-Path $imageRoot 'auth-migrations.tar'
+            sbom = Join-Path $evidenceRoot 'auth-migrations.cdx.json'
+            vulnerabilities = Join-Path $evidenceRoot 'auth-migrations-vulnerabilities.json'
+            secrets = Join-Path $evidenceRoot 'auth-migrations-secrets.json'
         }
     )
 

@@ -9,10 +9,25 @@ public static class AppHostExtensions
 {
     extension(IDistributedApplicationBuilder builder)
     {
+        public IResourceBuilder<ServiceContainerResource> AddAuthMigrations(
+            string image,
+            string digest,
+            IResourceBuilder<PostgresDatabaseResource> authDb) =>
+            builder.AddContainerImage(AuthConstants.MigrationsResource, image, digest)
+                   .WithReference(authDb)
+                   .WaitFor(authDb);
+
+        public IResourceBuilder<ProjectResource> AddAuthMigrations<TProject>(
+            IResourceBuilder<PostgresDatabaseResource> authDb)
+            where TProject : IProjectMetadata, new() =>
+            builder.AddProject<TProject>(AuthConstants.MigrationsResource)
+                   .WithReference(authDb)
+                   .WaitFor(authDb);
+
         public IResourceBuilder<ServiceContainerResource> AddAuth(
             string image,
             string digest,
-            IResourceBuilder<SqlServerDatabaseResource> authDb,
+            IResourceBuilder<PostgresDatabaseResource> authDb,
             IResourceBuilder<AzureServiceBusResource> asb)
         {
             var auth = builder.AddContainerImage(AuthConstants.Resource, image, digest)
@@ -43,7 +58,7 @@ public static class AppHostExtensions
         }
 
         public IResourceBuilder<ProjectResource> AddAuth<TProject>(
-            IResourceBuilder<SqlServerDatabaseResource> authDb,
+            IResourceBuilder<PostgresDatabaseResource> authDb,
             IResourceBuilder<AzureServiceBusResource> asb)
             where TProject : IProjectMetadata, new()
         {
