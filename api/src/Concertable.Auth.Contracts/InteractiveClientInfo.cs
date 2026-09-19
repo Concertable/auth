@@ -20,6 +20,8 @@ public sealed record InteractiveClientInfo(InteractiveClient Client, string Id)
         new InteractiveClientInfo(InteractiveClient.VenueMobile,     "venue-mobile"),
         new InteractiveClientInfo(InteractiveClient.ArtistBrowser,   "artist-web"),
         new InteractiveClientInfo(InteractiveClient.ArtistMobile,    "artist-mobile"),
+        new InteractiveClientInfo(InteractiveClient.BusinessBrowser, "business-web"),
+        new InteractiveClientInfo(InteractiveClient.BusinessMobile,  "business-mobile"),
         new InteractiveClientInfo(InteractiveClient.Admin,           "admin"),
         new InteractiveClientInfo(InteractiveClient.E2ETest,         "concertable-test"),
     }.ToFrozenDictionary(info => info.Client);

@@ -32,8 +32,8 @@ The `clientId` is **not stored** in Auth — it is forwarded on the integration 
 public record CredentialRegisteredEvent(Guid UserId, string Email, string ClientId) : IIntegrationEvent;
 ```
 
-`ClientId` values are the `InteractiveClients` catalog in `api/src/Concertable.Auth.Contracts/InteractiveClients.cs`,
-keyed by the `InteractiveClient` enum; `InteractiveClients.Find` resolves a wire id back to its row:
+`ClientId` values are the `InteractiveClientInfo` catalog in `api/src/Concertable.Auth.Contracts/InteractiveClientInfo.cs`,
+keyed by the `InteractiveClient` enum; `InteractiveClientInfo.GetOrDefault` resolves a wire id back to its row:
 
 | ClientId | InteractiveClient | Surface |
 |---|---|---|
@@ -43,6 +43,8 @@ keyed by the `InteractiveClient` enum; `InteractiveClients.Find` resolves a wire
 | `venue-mobile` | `VenueMobile` | Venue Manager mobile app |
 | `artist-web` | `ArtistBrowser` | Artist Manager web SPA |
 | `artist-mobile` | `ArtistMobile` | Artist Manager mobile app |
+| `business-web` | `BusinessBrowser` | Business web SPA |
+| `business-mobile` | `BusinessMobile` | Business mobile app |
 | `admin` | `Admin` | Admin web SPA |
 | `concertable-test` | `E2ETest` | E2E harness (resource-owner password) |
 

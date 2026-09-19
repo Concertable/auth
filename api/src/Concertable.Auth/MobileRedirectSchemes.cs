@@ -17,6 +17,7 @@ public static class MobileRedirectSchemes
         [InteractiveClient.CustomerMobile] = "concertable-customer://",
         [InteractiveClient.VenueMobile] = "concertable-business://",
         [InteractiveClient.ArtistMobile] = "concertable-business://",
+        [InteractiveClient.BusinessMobile] = "concertable-business://",
     }.ToFrozenDictionary();
 
     extension(InteractiveClient client)
