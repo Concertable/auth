@@ -104,8 +104,13 @@ public sealed class ApiFixture : IAsyncLifetime
     }
 
     public string CreateAuthorizationReturnUrl() =>
-        $"/connect/authorize/callback?client_id={InteractiveClientInfo.Get(InteractiveClient.CustomerBrowser).Id}"
-        + "&redirect_uri=https%3A%2F%2Flocalhost%3A5174%2Fauth%2Fcallback"
+        CreateAuthorizationReturnUrl(
+            InteractiveClient.CustomerBrowser,
+            "https://localhost:5174/auth/callback");
+
+    public string CreateAuthorizationReturnUrl(InteractiveClient client, string redirectUri) =>
+        $"/connect/authorize/callback?client_id={InteractiveClientInfo.Get(client).Id}"
+        + $"&redirect_uri={Uri.EscapeDataString(redirectUri)}"
         + "&response_type=code&scope=openid&state=test-state&nonce=test-nonce"
         + "&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         + "&code_challenge_method=S256";
