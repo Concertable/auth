@@ -13,10 +13,41 @@ public sealed class ResourceGraphTests
     [Fact]
     public void ProductionGraphAndStrictValidation_AreValid()
     {
-        using var app = AppHost.CreateBuilder([]).Build();
+        var validBuilder = AppHost.CreateBuilder([]);
+        Assert.Single(validBuilder.Resources.OfType<PostgresServerResource>());
+        Assert.Empty(validBuilder.Resources.OfType<SqlServerServerResource>());
+        Assert.IsType<ProjectResource>(validBuilder.Resources.Single(resource =>
+            resource.Name == AuthConstants.MigrationsResource));
+        AssertWaitsFor(
+            validBuilder,
+            AuthConstants.MigrationsResource,
+            AuthConstants.Database,
+            WaitType.WaitUntilHealthy);
+        AssertWaitsFor(
+            validBuilder,
+            AuthConstants.Resource,
+            AuthConstants.MigrationsResource,
+            WaitType.WaitForCompletion);
+        using var app = validBuilder.Build();
         var builder = AppHost.CreateBuilder([]);
         builder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => builder.Build());
+    }
+
+    private static void AssertWaitsFor(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        string dependencyName,
+        WaitType waitType)
+    {
+        var resource = builder.Resources.Single(candidate => candidate.Name == resourceName);
+        var wait = Assert.Single(
+            resource.Annotations.OfType<WaitAnnotation>(),
+            annotation => annotation.Resource.Name == dependencyName);
+
+        Assert.Equal(waitType, wait.WaitType);
+        if (waitType == WaitType.WaitForCompletion)
+            Assert.Equal(0, wait.ExitCode);
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+extern alias AuthMigrations;
+
 using Concertable.Auth;
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Data;
@@ -26,6 +28,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using Xunit.Abstractions;
+using AuthMigrationJob = AuthMigrations::Concertable.Auth.Migrations.AuthMigrationJob;
 
 namespace Concertable.Auth.IntegrationTests.Fixtures;
 
@@ -35,7 +38,7 @@ public sealed class ApiFixture : IAsyncLifetime
 {
     private readonly XunitOutputAccessor outputAccessor = new();
     private readonly Dictionary<string, string?> previousEnvironment = new();
-    private SqlFixture sqlFixture = null!;
+    private PostgresFixture postgresFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
 
     public TestEmailSender EmailSender { get; } = new();
@@ -45,8 +48,9 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        sqlFixture = new SqlFixture();
-        await sqlFixture.InitializeAsync();
+        postgresFixture = new PostgresFixture();
+        await postgresFixture.InitializeAsync();
+        await AuthMigrationJob.RunAsync(postgresFixture.ConnectionString);
         ConfigureEnvironment();
 
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
@@ -75,19 +79,19 @@ public sealed class ApiFixture : IAsyncLifetime
             RestoreEnvironment();
         }
 
-        await sqlFixture.InitializeRespawnerAsync();
+        await postgresFixture.InitializeRespawnerAsync(Schema.Owned);
     }
 
     public async Task ResetAsync()
     {
-        await sqlFixture.ResetAsync();
+        await postgresFixture.ResetAsync();
         EmailSender.Reset();
     }
 
     public async Task DisposeAsync()
     {
         await factory.DisposeAsync();
-        await sqlFixture.DisposeAsync();
+        await postgresFixture.DisposeAsync();
     }
 
     public HttpClient CreateClient(Guid? userId = null)
@@ -215,6 +219,13 @@ public sealed class ApiFixture : IAsyncLifetime
         return await context.PasswordResetTokens.AnyAsync(candidate => candidate.Token == token);
     }
 
+    public async Task<TResult> InvokeAsync<TService, TResult>(Func<TService, Task<TResult>> action)
+        where TService : notnull
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        return await action(scope.ServiceProvider.GetRequiredService<TService>());
+    }
+
     public async Task InvokeAuthServiceAsync(Func<IAuthService, Task> action)
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -257,7 +268,7 @@ public sealed class ApiFixture : IAsyncLifetime
     {
         SetEnvironment("DOTNET_ENVIRONMENT", Environments.Integration);
         SetEnvironment("ASPNETCORE_ENVIRONMENT", Environments.Integration);
-        SetEnvironment("ConnectionStrings__AuthDb", sqlFixture.ConnectionString);
+        SetEnvironment("ConnectionStrings__AuthDb", postgresFixture.ConnectionString);
         SetEnvironment(
             "ConnectionStrings__asb",
             "Endpoint=sb://localhost/;SharedAccessKeyName=test;SharedAccessKey=test");

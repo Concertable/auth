@@ -17,8 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\api\src\Concertable.Auth.Migrations\Concertable.Auth.Migrations.csproj" Aliases="AuthMigrations" />
     <ProjectReference Include="..\Concertable.Auth.IntegrationTests.Fixtures\Concertable.Auth.IntegrationTests.Fixtures.csproj" />
-    <ProjectReference Include="..\..\..\tools\Concertable.Auth.OperationalStoreMigration\Concertable.Auth.OperationalStoreMigration.csproj" />
+    <PackageReference Include="Npgsql" />
     <PackageReference Include="Concertable.Testing" />
   </ItemGroup>
 

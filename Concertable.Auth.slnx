@@ -3,9 +3,7 @@
   <Project Path="api/src/Concertable.Auth.Contracts/Concertable.Auth.Contracts.csproj" />
   <Project Path="api/src/Concertable.Auth/Concertable.Auth.csproj" />
   <Project Path="api/src/Concertable.Auth.Hosting/Concertable.Auth.Hosting.csproj" />
-  <Folder Name="/Tools/">
-    <Project Path="tools/Concertable.Auth.OperationalStoreMigration/Concertable.Auth.OperationalStoreMigration.csproj" />
-  </Folder>
+  <Project Path="api/src/Concertable.Auth.Migrations/Concertable.Auth.Migrations.csproj" />
   <Folder Name="/Tests/">
     <Project Path="api/tests/Concertable.Auth.StartupTests/Concertable.Auth.StartupTests.csproj" />
     <Project Path="api/tests/Concertable.Auth.IntegrationTests.Fixtures/Concertable.Auth.IntegrationTests.Fixtures.csproj" />

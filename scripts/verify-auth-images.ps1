@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string] $RuntimeImage = "concertable/auth:verification-$PID",
-    [string] $MigrationImage = "concertable/auth-operational-store-migration:verification-$PID",
+    [string] $MigrationImage = "concertable/auth-migrations:verification-$PID",
     [string] $BuildVersion,
     [switch] $KeepImages
 )
@@ -170,22 +170,18 @@ try {
         ))
     $builtImages.Add($RuntimeImage)
 
-    & docker build `
-        --file (Join-Path $repositoryRoot 'Dockerfile') `
-        --build-arg "VCS_REF=$revision" `
-        --build-arg "BUILD_VERSION=$buildVersion" `
-        --label "com.concertable.auth.image-verification=$verificationId" `
-        --pull `
-        --target operational-store-migration `
-        --tag $MigrationImage `
-        $repositoryRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw "Migration image build failed with exit code $LASTEXITCODE."
-    }
+    Invoke-DockerBuildWithPackageToken `
+        -Token $packageToken `
+        -Arguments ($commonArguments + @(
+            '--secret', 'id=github_packages_token,env=GITHUB_PACKAGES_TOKEN',
+            '--target', 'auth-migrations',
+            '--tag', $MigrationImage,
+            $repositoryRoot
+        ))
     $builtImages.Add($MigrationImage)
 
     Assert-ImageMetadata -Image $RuntimeImage -ExpectedAssembly 'Concertable.Auth.dll'
-    Assert-ImageMetadata -Image $MigrationImage -ExpectedAssembly 'Concertable.Auth.OperationalStoreMigration.dll'
+    Assert-ImageMetadata -Image $MigrationImage -ExpectedAssembly 'Concertable.Auth.Migrations.dll'
     $packageToken = $null
 
     $runtimeOutput = (& docker run --rm --entrypoint dotnet $RuntimeImage --list-runtimes) -join "`n"
@@ -198,9 +194,9 @@ try {
         throw 'Auth runtime image contains the E2E-only appsettings file.'
     }
 
-    $migrationHelp = (& docker run --rm $MigrationImage --help) -join "`n"
-    if ($LASTEXITCODE -ne 0 -or $migrationHelp -notmatch 'Copies Duende operational-store rows from B2BDb to AuthDb') {
-        throw 'Operational-store migration image help smoke failed.'
+    $migrationOutput = (& docker run --rm $MigrationImage 2>&1) -join "`n"
+    if ($LASTEXITCODE -eq 0 -or $migrationOutput -notmatch "Connection string 'ConnectionStrings__AuthDb' is required") {
+        throw 'Auth migrations image did not refuse to run without a connection string.'
     }
 
     Write-Host "Verified Auth images for revision ${revision}: $RuntimeImage, $MigrationImage."
