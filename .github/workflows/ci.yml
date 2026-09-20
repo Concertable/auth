@@ -113,7 +113,7 @@ jobs:
         run: >-
           ./scripts/verify-auth-images.ps1
           -RuntimeImage 'concertable/auth:verification'
-          -MigrationImage 'concertable/auth-operational-store-migration:verification'
+          -MigrationImage 'concertable/auth-migrations:verification'
           -KeepImages
 
       - name: Scan runtime image vulnerabilities
@@ -141,7 +141,7 @@ jobs:
           --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
           aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
           image --scanners vuln --severity CRITICAL --exit-code 1 --no-progress
-          concertable/auth-operational-store-migration:verification
+          concertable/auth-migrations:verification
 
       - name: Scan migration image secrets
         run: >-
@@ -150,7 +150,7 @@ jobs:
           --volume '${{ runner.temp }}/trivy-cache:/root/.cache/trivy'
           aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
           image --scanners secret --exit-code 1 --no-progress
-          concertable/auth-operational-store-migration:verification
+          concertable/auth-migrations:verification
 
       - name: Generate and verify image SBOMs
         shell: pwsh
@@ -159,7 +159,7 @@ jobs:
           New-Item -ItemType Directory -Path $evidence | Out-Null
           foreach ($item in @(
             @{ Image = 'concertable/auth:verification'; File = 'auth-runtime.cdx.json' },
-            @{ Image = 'concertable/auth-operational-store-migration:verification'; File = 'auth-migration.cdx.json' }
+            @{ Image = 'concertable/auth-migrations:verification'; File = 'auth-migration.cdx.json' }
           )) {
             docker run --rm `
               --volume /var/run/docker.sock:/var/run/docker.sock `
@@ -182,7 +182,7 @@ jobs:
         run: |
           foreach ($image in @(
             'concertable/auth:verification',
-            'concertable/auth-operational-store-migration:verification'
+            'concertable/auth-migrations:verification'
           )) {
             docker image inspect $image *> $null
             if ($LASTEXITCODE -eq 0) {

@@ -15,6 +15,7 @@
     <PackageReference Include="Concertable.AppHost.Shared" />
     <ProjectReference Include="..\..\api\src\Concertable.Auth.Hosting\Concertable.Auth.Hosting.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\api\src\Concertable.Auth\Concertable.Auth.csproj" />
+    <ProjectReference Include="..\..\api\src\Concertable.Auth.Migrations\Concertable.Auth.Migrations.csproj" />
   </ItemGroup>
 
 </Project>

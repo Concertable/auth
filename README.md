@@ -40,9 +40,9 @@ pwsh ./scripts/verify-auth-packages.ps1 -Configuration Release
 
 ## Verifying image readiness
 
-Auth owns a runtime image and a one-shot operational-store migration image. The verifier builds both from
-digest-pinned .NET 10 bases without publishing them, exposes the package credential only as a BuildKit
-restore secret, validates their non-root metadata and entrypoints, and smoke-runs the migration help path:
+Auth owns a runtime image and a migrations image. The verifier builds both from digest-pinned .NET 10
+bases without publishing them, exposes the package credential only as a BuildKit restore secret, validates
+their non-root metadata and entrypoints, and smoke-runs the migrations image's connection-string guard:
 
 ```sh
 pwsh ./scripts/verify-auth-images.ps1
