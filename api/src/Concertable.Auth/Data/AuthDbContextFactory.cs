@@ -1,3 +1,4 @@
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,9 +10,10 @@ internal sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbC
     public AuthDbContext CreateDbContext(string[] args)
     {
         var services = new ServiceCollection();
+        services.AddOptions<OutboxOptions>();
         services.AddSingleton<AuthConfigurationProvider>();
         services.AddDbContext<AuthDbContext>(opts =>
-            opts.UseSqlServer(DesignTimeConfiguration.ConnectionString()));
+            opts.UseNpgsqlForAuth(DesignTimeConfiguration.ConnectionString()));
         return services.BuildServiceProvider().GetRequiredService<AuthDbContext>();
     }
 }

@@ -16,6 +16,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Refit.HttpClientFactory" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />
@@ -40,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Concertable.Auth.Migrations" />
     <InternalsVisibleTo Include="Concertable.Auth.IntegrationTests.Fixtures" />
     <InternalsVisibleTo Include="Concertable.Auth.UnitTests" />
   </ItemGroup>

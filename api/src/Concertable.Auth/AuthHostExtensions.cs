@@ -75,7 +75,7 @@ public static class AuthHostExtensions
             builder.Services.AddSeedingInfrastructure();
             builder.Services.AddSingleton<AuthConfigurationProvider>();
             builder.Services.AddDbContext<AuthDbContext>((sp, opt) =>
-                opt.UseSqlServer(authConnectionString)
+                opt.UseNpgsqlForAuth(authConnectionString)
                     .AddInterceptors(sp.GetRequiredService<AuditInterceptor>(), sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(sp));
             builder.Services.AddScoped<IDomainEventHandler<CredentialCreatedDomainEvent>, CredentialCreatedDomainEventHandler>();
@@ -100,7 +100,9 @@ public static class AuthHostExtensions
             builder.Services.AddScoped<IDbInitializer, AuthDbInitializer>();
             if (!builder.Environment.IsProduction())
                 builder.Services.AddScoped<IDevSeeder, AuthDevSeeder>();
-            builder.Services.AddOutbox(opt => opt.UseSqlServer(authConnectionString), runDispatcher: true);
+            builder.Services.AddOutbox(
+                opt => opt.UseNpgsqlForOutbox(authConnectionString),
+                runDispatcher: true);
             builder.Services.AddInProcessEventDispatch();
             builder.Services.AddAzureServiceBusTransport(
                 opts =>
@@ -150,10 +152,8 @@ public static class AuthHostExtensions
                 .AddProfileService<ProfileService>()
                 .AddOperationalStore(options =>
                 {
-                    options.ConfigureDbContext = db => db.UseSqlServer(
-                        authConnectionString,
-                        sql => sql.MigrationsAssembly(migrationsAssembly));
-                    options.DefaultSchema = "idsrv";
+                    options.ConfigureDbContext = db => db.UseNpgsqlForGrants(authConnectionString);
+                    options.DefaultSchema = Schema.Grants;
                 })
                 .AddDeveloperSigningCredential();
             if (builder.Environment.IsE2E())
