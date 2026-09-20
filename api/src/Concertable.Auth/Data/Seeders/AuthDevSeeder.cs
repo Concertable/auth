@@ -32,7 +32,8 @@ internal sealed class AuthDevSeeder : IDevSeeder
         this.logger = logger;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    // Concertable.Auth.Migrations owns every schema; do not migrate here, or the web host races it.
+    public Task MigrateAsync(CancellationToken ct = default) => Task.CompletedTask;
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
