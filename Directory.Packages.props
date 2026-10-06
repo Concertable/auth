@@ -12,7 +12,7 @@
     <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.6.0" />
     <PackageVersion Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageVersion Include="Duende.IdentityServer" Version="7.4.7" />
-    <PackageVersion Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
+    <PackageVersion Include="Duende.IdentityServer.EntityFramework" Version="7.4.13" />
     <PackageVersion Include="Dunet" Version="1.16.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
