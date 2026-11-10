@@ -1,17 +1,14 @@
 # Concertable.Auth
 
-The **Auth** service of [Concertable](https://github.com/Concertable/concertable) — the
+The **Auth** service of Concertable — the
 authentication *adapter service*: it owns credentials and identity, issues tokens, and publishes
 `CredentialRegisteredEvent` when a user registers (which every consuming service reacts to to
 provision its own user/profile rows). As an adapter, data services may call it synchronously and
 `WaitFor` it at startup.
 
-## Auth promotion source
+## Auth release source
 
-Auth promotion changes now land in this repository. During checkpoint 10B, the preserved Auth source in
-[`Concertable/concertable`](https://github.com/Concertable/concertable) remains available for compatibility
-and rollback, but mirror automation must not overwrite this repository. Open Auth preparation pull requests
-here; canonical releases and deployment remain separately approved cutover steps.
+This repository owns Auth source changes, release preparation and deployment.
 
 ## Building standalone
 
