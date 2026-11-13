@@ -20,7 +20,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.4" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.2" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="11.2.0" />
     <PackageVersion Include="Reunion" Version="0.1.0-alpha.14" />
     <PackageVersion Include="Reunion.Errors" Version="0.1.0-alpha.14" />
