@@ -1,0 +1,29 @@
+{
+  "authorization_resolution": {
+    "standing": "auto",
+    "stopped_by": null
+  },
+  "auto_merge": true,
+  "bound_at": "2026-11-10T21:30:58.615512+00:00",
+  "branch": "Chore/RetireArchivedMonorepo",
+  "changed_path_count": 1,
+  "completion_condition": "the bound PR reaches MERGED, or a recorded terminal ends this delivery",
+  "head": "5f739ed51701ad5131ca8d0ea90a39f048c4d2ea",
+  "merge_authorization": {
+    "instruction": "Tommy, 2026-10-15 (PluginScoping plan): extend the standing auto-merge instruction to every repository in this migration when reviews and required checks pass; repository stop rules and hold labels still apply.",
+    "mode": "auto"
+  },
+  "pending_evidence": [],
+  "pr": 52,
+  "pr_url": "https://github.com/Concertable/auth/pull/52",
+  "repo": "Concertable/auth",
+  "review": {
+    "reviewed_sha": "5f739ed51701ad5131ca8d0ea90a39f048c4d2ea",
+    "work_order": "C:\\Users\\TommySeery\\source\\repos\\Concertable\\auth\\.git\\agent-workflow\\reviews\\51ae7e60aaf17c795f3cf2a50a7df2447abf23a8a42b06439408c901f680636c\\work-order.md",
+    "work_order_order": [
+      "full"
+    ]
+  },
+  "schema_version": 1,
+  "worktree": "C:\\Users\\TommySeery\\source\\repos\\Concertable\\auth\\auth.worktrees\\Chore-RetireArchivedMonorepo"
+}
